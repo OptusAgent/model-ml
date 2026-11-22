@@ -30,6 +30,7 @@ export default {
           <button class="btn btn-ghost" id="st5">${icon('x', 14)} Injetar 5 stops seguidos</button>
           <button class="btn btn-ghost" id="st10">${icon('x', 14)} Injetar 10 stops seguidos</button>
           <button class="btn btn-ghost" id="stBig">${icon('alert', 14)} Queda grande da conta</button>
+          <button class="btn btn-ghost" id="stDemo">${icon('zap', 14)} Gerar sinal de demonstração</button>
           <button class="btn btn-primary" id="stReset">${icon('refresh', 14)} Reiniciar a conta demo</button>
         </div>
       </section>`;
@@ -58,6 +59,7 @@ export default {
     $('#st5', root).onclick = () => { engine.stressLosses(5); toast('5 stops seguidos injetados'); };
     $('#st10', root).onclick = () => { engine.stressLosses(10); toast('10 stops seguidos injetados'); };
     $('#stBig', root).onclick = () => { engine.stressBigLoss(); toast('Queda grande injetada'); };
+    $('#stDemo', root).onclick = () => { const s = engine.demoSignal('XAUUSD'); toast(s ? `Sinal de demonstração ${s.id} criado` : 'Já existe um sinal aberto no ouro'); };
     $('#stReset', root).onclick = () => { engine.resetAccount(); toast('Conta demo reiniciada', 'ok'); render(); };
     render();
     const offs = [engine.bus.on('closed', render), engine.bus.on('lab', render)];

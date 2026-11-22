@@ -4,7 +4,7 @@ import { fmt } from '../util.js';
 import { icon } from '../icons.js';
 import { $, px, REGIME_PILL, symIcon, createCandleChart, signalCardHTML, bindSignalActions } from '../ui.js';
 
-const TFS = [[1, 'M1'], [5, 'M5'], [15, 'M15'], [60, 'H1']];
+const TFS = [[1, 'M1'], [2, 'M2'], [5, 'M5'], [15, 'M15'], [60, 'H1']];
 
 export default {
   title: 'Operar',
@@ -55,7 +55,7 @@ export default {
       $('#oName', root).textContent = `${SYMBOLS[sym].name} · ${sym}`;
       const p = engine.priceOf(sym), atr = engine.live[sym]?.atr || SYMBOLS[sym].vol * 3.6;
       $('#tSl', root).value = fmt.num(p.ask - atr, SYMBOLS[sym].digits);
-      $('#tTp', root).value = fmt.num(p.ask + 2 * atr, SYMBOLS[sym].digits);
+      $('#tTp', root).value = fmt.num(p.ask + engine.settings.R * atr, SYMBOLS[sym].digits);
       info();
     }
     root.querySelector('#oSym').onclick = (e) => { const b = e.target.closest('button'); if (b) { sym = b.dataset.s; chart.setSymbol(sym); seg(); sig(); live(); } };

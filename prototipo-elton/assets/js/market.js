@@ -8,7 +8,7 @@ export const SYMBOLS = {
     id: 'XAUUSD', name: 'Ouro', desc: 'XAU/USD · onça troy', digits: 2,
     start: 4158.4, vol: 1.15, spread: 0.3, round: 10,
     valuePerPoint: 100, // US$ por 1,00 de movimento por lote (1 lote = 100 onças)
-    edge: { drift: 0.05, boost: 0.55, boostMin: 25, switchP: 1 / 480 }, // simulação com vantagem real
+    edge: { drift: 0.04, boost: 0.45, boostMin: 25, switchP: 1 / 480 }, // simulação com vantagem real
     contractText: '1 lote = 100 onças',
   },
   HK50: {

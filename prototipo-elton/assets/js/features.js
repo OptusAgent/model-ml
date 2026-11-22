@@ -13,7 +13,52 @@ export const FEATURES = [
   { key: 'londres', label: 'Sessão de Londres', help: '1 se for entre 07h e 12h (UTC).' },
   { key: 'ny', label: 'Sessão de Nova York', help: '1 se for entre 12h e 17h (UTC).' },
   { key: 'vol', label: 'Volatilidade relativa', help: 'ATR atual dividido pela média dos últimos 100 ATRs.' },
+  { key: 'asia', label: 'Abertura da Ásia', help: '1 se for entre 00h e 03h (UTC), abertura de Tóquio e Hong Kong.' },
+  { key: 'rsi', label: 'RSI(10) a favor', help: 'RSI de 10 períodos na direção da tendência (na baixa, 100 − RSI). Abaixo de 30 = esticado contra a tendência.' },
+  { key: 'div_favor', label: 'Divergência RSI a favor', help: 'Divergência confirmada nos últimos 6 candles: de alta (preço faz fundo mais baixo, RSI faz fundo mais alto) na tendência de alta; de baixa na tendência de baixa.' },
+  { key: 'div_contra', label: 'Divergência RSI contra', help: 'Divergência confirmada nos últimos 6 candles contra a tendência.' },
 ];
+
+export const BINARY_KEYS = new Set(['varreu_favor', 'varreu_contra', 'recuo', 'londres', 'ny', 'asia', 'div_favor', 'div_contra']);
+export const RSI_PERIOD = 10;
+
+// RSI de Wilder.
+export function rsiOf(bars, n = RSI_PERIOD) {
+  const out = new Array(bars.length).fill(50);
+  let up = 0, dn = 0;
+  for (let i = 1; i < bars.length; i++) {
+    const d = bars[i].close - bars[i - 1].close;
+    const g = Math.max(d, 0), l = Math.max(-d, 0);
+    if (i <= n) { up += g / n; dn += l / n; } else { up = (up * (n - 1) + g) / n; dn = (dn * (n - 1) + l) / n; }
+    out[i] = i < n ? 50 : dn === 0 ? 100 : 100 - 100 / (1 + up / dn);
+  }
+  return out;
+}
+
+// Divergências entre preço e RSI usando topos e fundos (pivôs) confirmados.
+// Um pivô no candle k só é confirmado no candle k + right, então nada olha para o futuro.
+export function divergencesOf(bars, rsi, { left = 3, right = 3, minGap = 5, maxGap = 40 } = {}) {
+  const lows = [], highs = [], divs = [];
+  for (let k = left; k < bars.length - right; k++) {
+    let isLow = true, isHigh = true;
+    for (let j = k - left; j <= k + right; j++) {
+      if (j === k) continue;
+      if (bars[j].low <= bars[k].low) isLow = false;
+      if (bars[j].high >= bars[k].high) isHigh = false;
+    }
+    if (isLow) {
+      const prev = lows[lows.length - 1];
+      if (prev !== undefined && k - prev >= minGap && k - prev <= maxGap && bars[k].low < bars[prev].low && rsi[k] > rsi[prev]) divs.push({ type: 'alta', i1: prev, i2: k, at: k + right });
+      lows.push(k);
+    }
+    if (isHigh) {
+      const prev = highs[highs.length - 1];
+      if (prev !== undefined && k - prev >= minGap && k - prev <= maxGap && bars[k].high > bars[prev].high && rsi[k] < rsi[prev]) divs.push({ type: 'baixa', i1: prev, i2: k, at: k + right });
+      highs.push(k);
+    }
+  }
+  return divs;
+}
 
 export function indicators(bars) {
   const n = bars.length, ema = new Array(n), atr = new Array(n), atrAvg = new Array(n);
@@ -28,7 +73,16 @@ export function indicators(bars) {
     if (i >= 100) sumAtr -= atr[i - 100];
     atrAvg[i] = sumAtr / Math.min(i + 1, 100);
   }
-  return { ema, atr, atrAvg };
+  const rsi = rsiOf(bars);
+  const divs = divergencesOf(bars, rsi);
+  const bullAt = new Uint8Array(n), bearAt = new Uint8Array(n);
+  for (const d of divs) if (d.at < n) (d.type === 'alta' ? bullAt : bearAt)[d.at] = 1;
+  return { ema, atr, atrAvg, rsi, divs, bullAt, bearAt };
+}
+
+function recentDiv(arr, i, span = 6) {
+  for (let k = i; k > i - span && k >= 0; k--) if (arr[k]) return 1;
+  return 0;
 }
 
 export function regimeOf(slope) {
@@ -64,9 +118,13 @@ export function featureAt(bars, ind, i, symId) {
   const h = new Date(bars[i].time * 1000).getUTCHours();
   const londres = h >= 7 && h < 12 ? 1 : 0, ny = h >= 12 && h < 17 ? 1 : 0;
   const vol = atr / ind.atrAvg[i];
+  const asia = h >= 0 && h < 3 ? 1 : 0;
+  const rsiFavor = dir > 0 ? ind.rsi[i] : 100 - ind.rsi[i];
+  const bull = recentDiv(ind.bullAt, i), bear = recentDiv(ind.bearAt, i);
+  const divFavor = dir > 0 ? bull : bear, divContra = dir > 0 ? bear : bull;
   return {
-    i, time: bars[i].time, close: c, atr, slope, regime, side,
-    x: [Math.abs(slope), favor, contra, clamp(mom, -4, 4), recuo, redondo, londres, ny, vol],
+    i, time: bars[i].time, close: c, atr, slope, regime, side, rsi: ind.rsi[i],
+    x: [Math.abs(slope), favor, contra, clamp(mom, -4, 4), recuo, redondo, londres, ny, vol, asia, rsiFavor, divFavor, divContra],
   };
 }
 

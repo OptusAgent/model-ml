@@ -5,7 +5,8 @@ são **simulados no navegador**. As telas e o caminho dos dados são os mesmos d
 
 O que dá para testar:
 
-- sinais em tempo real, com o botão "Comprar/Vender no MT5";
+- sinais em tempo real no M5, com alvo de 3R, chance mínima de 50% e até 3 por dia (respostas do Elton), com o botão "Comprar/Vender no MT5";
+- gráfico com M1, M2, M5, M15 e H1 e o RSI(10) com as divergências marcadas;
 - execução da ordem, stop e alvo fechando sozinhos, relatório no formato do MT5;
 - o modelo por trás: notebook com o código Python do servidor e saídas calculadas;
 - laboratório com Walk Forward (Pardo), cofre, teste contra o acaso, calibração e as regras que o modelo encontrou;
@@ -80,7 +81,7 @@ Dentro do app, abra **Guia de apresentação** (menu lateral, ou "Mais" no celul
 
 Atalhos úteis na apresentação:
 
-- relógio e velocidade no topo (60× é o melhor para mostrar; 300× para gerar sinais rápido);
+- relógio e velocidade no topo. O mercado começa 15 min antes de Nova York; sinais só na abertura da Ásia e em NY, até 3 por dia. Use 300× para chegar rápido nesses horários;
 - botão de pausa para congelar o mercado enquanto explica;
 - **Risco e semáforo → Injetar 10 stops**: mostra o semáforo vermelho na hora;
 - **Risco e semáforo → Reiniciar a conta demo** antes de começar.
@@ -123,11 +124,11 @@ No console do navegador, `window.__engine` dá acesso ao motor (sinais, conta, l
 
 1. **Coletor** (`market.js`): a cada tick (10 segundos simulados) o preço anda; a cada 6 ticks fecha um candle de 1 minuto.
 2. **Vigia** (`engine.js → onM5Close`): a cada candle de 5 minutos fechado, monta a ficha só com o passado, classifica o mercado (alta/baixa/lateral) e pede a chance ao modelo.
-3. **Filtros:** ativo ligado → não lateral → regra aprovada no laboratório → horário → notícia → semáforo → sem posição aberta → chance ≥ limite.
-4. **Sinal:** lado, entrada, stop (1 ATR), alvo (2R), lotes por risco (0,5% da conta), expectativa e explicação.
+3. **Filtros:** ativo ligado → não lateral → regra aprovada no laboratório → horário (abertura da Ásia e Nova York) → até 3 sinais por dia → notícia → semáforo → sem posição aberta → chance ≥ 50%.
+4. **Sinal:** lado, entrada, stop (1 ATR), alvo (3R, o mínimo do Elton), lotes por risco (0,5% da conta), expectativa e explicação.
 5. **Executor** (`broker.js`): `order_send` com latência, códigos de retorno do MT5 (10009, 10014, 10016, 10019); a corretora vigia stop e alvo a cada tick.
 6. **Semáforo:** compara o ao vivo com as provas (acerto, sequência de stops, queda da conta).
-7. **Laboratório** (`lab.js`): 30 mil minutos sintéticos → 6 mil candles de 5 min → fichas e rótulos → 4 rodadas de Walk Forward → cofre → teste contra entradas no chute → veredito.
+7. **Laboratório** (`lab.js`): 90 mil minutos sintéticos → 18 mil candles de 5 min → fichas e rótulos → 4 rodadas de Walk Forward → cofre → teste contra entradas no chute → veredito.
 
 ## 6. Do protótipo ao app real
 
@@ -158,6 +159,7 @@ No console do navegador, `window.__engine` dá acesso ao motor (sinais, conta, l
 ## 7. Limitações conhecidas
 
 - Mercado, conta e modelo são sintéticos. Fins de semana e feriados não são simulados.
-- O modelo usa só 9 variáveis e regressão logística, para rodar rápido no navegador.
-- A latência da ordem simulada pode mover o preço de entrada (escorregamento). Por isso o resultado em R pode ficar um pouco abaixo de 2R.
+- O modelo usa 13 variáveis (incluindo RSI(10) e divergência) e regressão logística, para rodar rápido no navegador.
+- Com dados sintéticos o acerto no alvo de 3R sai alto demais. Com dados reais da Hantec ele deve ser bem menor; quem decide é o laboratório.
+- A latência da ordem simulada pode mover o preço de entrada (escorregamento). Por isso o resultado em R pode ficar um pouco abaixo do alvo.
 - Nada fica salvo entre visitas, a não ser o checklist da tela de conexões (no navegador).

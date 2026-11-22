@@ -1,7 +1,7 @@
 // Notebook do modelo: o código Python que roda no servidor (VPS Windows com o MT5),
 // célula por célula, com as saídas calculadas pelo motor do protótipo.
 import { SYMBOLS, SYMBOL_IDS } from '../market.js';
-import { FEATURES } from '../features.js';
+import { FEATURES, BINARY_KEYS } from '../features.js';
 import { fmt } from '../util.js';
 import { icon } from '../icons.js';
 import { $, px } from '../ui.js';
@@ -96,13 +96,25 @@ df = df[~picos]`,
     h = df.index.hour
     f["londres"], f["ny"] = ((h >= 7) & (h < 12)).astype(int), ((h >= 12) & (h < 17)).astype(int)
     f["vol"] = atr / atr.rolling(100).mean()
+    f["asia"] = (h < 3).astype(int)                              # abertura de Tóquio e Hong Kong
+
+    # RSI de 10 períodos (pedido do Elton) e divergências com o preço
+    delta = df.close.diff()
+    ganho = delta.clip(lower=0).ewm(alpha=1/10, adjust=False).mean()
+    perda = (-delta.clip(upper=0)).ewm(alpha=1/10, adjust=False).mean()
+    rsi = 100 - 100 / (1 + ganho / perda)
+    f["rsi"] = np.where(lado >= 0, rsi, 100 - rsi)
+    div_alta, div_baixa = divergencias(df, rsi, esquerda=3, direita=3)  # pivô só vale depois de confirmado
+    f["div_favor"] = np.where(lado >= 0, div_alta, div_baixa)
+    f["div_contra"] = np.where(lado >= 0, div_baixa, div_alta)
     return f.dropna()
 
-X = ["forca", "varreu_favor", "varreu_contra", "momento", "recuo", "redondo", "londres", "ny", "vol"]
+X = ["forca", "varreu_favor", "varreu_contra", "momento", "recuo", "redondo",
+     "londres", "ny", "vol", "asia", "rsi", "div_favor", "div_contra"]
 f = fichas(df); f.tail(8)`,
-      out: () => table(['time', 'regime', ...FEATURES.map((x) => x.key)], L.sample.map((s) => [fmt.dateTime(s.time), s.regime, ...s.x.map((v, j) => fmt.num(v, [1, 2, 4, 6, 7].includes(j) ? 0 : 2))])),
+      out: () => table(['time', 'regime', ...FEATURES.map((x) => x.key)], L.sample.map((s) => [fmt.dateTime(s.time), s.regime, ...s.x.map((v, j) => fmt.num(v, BINARY_KEYS.has(FEATURES[j].key) ? 0 : 2))])),
     },
-    { md: true, h: '5 · Rótulos com três barreiras', p: 'Para cada momento em tendência, o app pergunta: comprando (ou vendendo) aqui, com stop de 1 ATR e alvo de 2R, o que veio primeiro? Se tocou os dois no mesmo candle, conta como stop. O spread é descontado.' },
+    { md: true, h: '5 · Rótulos com três barreiras', p: 'Para cada momento em tendência, o app pergunta: comprando (ou vendendo) aqui, com stop de 1 ATR e alvo de 3R (o mínimo que o Elton aceita), o que veio primeiro? Se tocou os dois no mesmo candle, conta como stop. O spread é descontado.' },
     {
       where: 'laboratório',
       code: `def triple_barrier(df, i, lado, atr, R=${L.opts.R}, stop_atr=${L.opts.stopAtr}, max_candles=${L.opts.maxBars}, spread=${S.spread}):
@@ -120,7 +132,7 @@ f = fichas(df); f.tail(8)`,
 
 rotulos = rotular(df, f)          # aplica a função em cada candle em tendência
 rotulos.resultado.value_counts()`,
-      out: () => `<pre>alvo     ${String(L.counts.alvo).padStart(6)}\nstop     ${String(L.counts.stop).padStart(6)}\ntempo    ${String(L.counts.tempo).padStart(6)}\n<span class="muted"># candles laterais fora da amostra: ${L.counts.lateral} · taxa de alvo sem filtro: ${fmt.pct(L.counts.alvo / L.counts.samples)} · mínimo para 2R: ${fmt.pct(L.minAcerto, 0)}</span></pre>`,
+      out: () => `<pre>alvo     ${String(L.counts.alvo).padStart(6)}\nstop     ${String(L.counts.stop).padStart(6)}\ntempo    ${String(L.counts.tempo).padStart(6)}\n<span class="muted"># candles laterais fora da amostra: ${L.counts.lateral} · taxa de alvo sem filtro: ${fmt.pct(L.counts.alvo / L.counts.samples)} · mínimo para ${L.opts.R}R: ${fmt.pct(L.minAcerto, 0)}</span></pre>`,
     },
     { md: true, h: '6 · Estudo e prova avançando no tempo (Walk Forward)', p: 'O passado é dividido em blocos. O modelo estuda dois blocos e faz a prova no bloco seguinte, que nunca viu. Depois avança e repete. Só conta uma operação por vez.' },
     {
@@ -151,7 +163,7 @@ p_valor = (np.sum(np.array(acaso) >= res_cofre.expectativa) + 1) / (len(acaso) +
 print(res_cofre, "p =", round(p_valor, 3))`,
       out: () => `<pre>cofre: ${L.cofre.n} operações · acerto ${fmt.pct(L.cofre.acerto, 0)} · expectativa <span class="${L.cofre.exp > 0 ? 'pos' : 'neg'}">${fmt.r(L.cofre.exp)}</span>\nno chute: média ${fmt.r(L.perm.reduce((a, b) => a + b, 0) / L.perm.length)} · melhor ${fmt.r(Math.max(...L.perm))}\np = ${fmt.num(L.pValue, 3)}   <span class="muted"># chance de o resultado ser sorte (≤ 0,10 aprova)</span>\n\nVEREDITO: ${L.verdict ? '<span class="pos">APROVADA · pode ir para o ao vivo (demo)</span>' : '<span class="amber">REPROVADA · o app só observa este ativo</span>'}</pre>`,
     },
-    { md: true, h: '8 · A chance é honesta? (calibração)', p: 'Quando o modelo diz 45%, precisa acontecer perto de 45%. Junta as provas por faixa de chance e conta quantas bateram o alvo.' },
+    { md: true, h: '8 · A chance é honesta? (calibração)', p: 'Quando o modelo diz 50%, precisa acontecer perto de 50%. Junta as provas por faixa de chance e conta quantas bateram o alvo.' },
     {
       where: 'laboratório',
       code: `from sklearn.calibration import calibration_curve

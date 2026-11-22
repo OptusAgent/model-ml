@@ -4,7 +4,7 @@ import { generateHistory, aggregate } from './market.js';
 import { indicators, featureAt, labelAt, trainLogit, predict } from './features.js';
 import { rng, mean } from './util.js';
 
-export const LAB_DEFAULTS = { limiar: 0.45, R: 2, stopAtr: 1, maxBars: 24, minutes: 30000, perms: 20 };
+export const LAB_DEFAULTS = { limiar: 0.5, R: 3, stopAtr: 1, maxBars: 36, minutes: 90000, perms: 20 };
 
 // Uma operação por vez: ignora entradas enquanto a anterior ainda está aberta.
 function nonOverlap(list) {
@@ -94,14 +94,14 @@ export function runLab(symId, opts = {}) {
   const groups = new Map();
   for (const c of calib) {
     const s = c.s;
-    const sess = s.x[6] ? 'Londres' : s.x[7] ? 'Nova York' : 'fora das sessões';
-    const key = `${s.regime === 'alta' ? 'Tendência de alta' : 'Tendência de baixa'}|${s.x[1] ? 'varreu liquidez a favor' : 'sem varrida'}|${sess}`;
+    const sess = s.x[9] ? 'abertura da Ásia' : s.x[6] ? 'Londres' : s.x[7] ? 'Nova York' : 'fora das sessões';
+    const key = `${s.regime === 'alta' ? 'Tendência de alta' : 'Tendência de baixa'}|${s.x[1] ? 'varreu liquidez a favor' : 'sem varrida'}|${s.x[11] ? 'divergência RSI a favor' : 'sem divergência'}|${sess}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(c);
   }
   const rules = [...groups.entries()]
     .map(([key, g]) => ({ parts: key.split('|'), n: g.length, said: mean(g.map((c) => c.p)), happened: mean(g.map((c) => c.y)), exp: mean(g.map((c) => c.s.r)) }))
-    .filter((g) => g.n >= 25)
+    .filter((g) => g.n >= 20)
     .sort((a, b) => b.exp - a.exp);
   const lateralRes = { n: ds.lateral.length, acerto: mean(ds.lateral.map((l) => l.y)), exp: mean(ds.lateral.map((l) => l.r)) };
 

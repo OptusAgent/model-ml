@@ -13,13 +13,15 @@ export const SPEEDS = [
   { v: 300, label: '300×' },
 ];
 
+// Padrões definidos pelas respostas do Elton (22/11/2026): sinais no M5, alvo mínimo de 3R,
+// nada abaixo de 50% de chance, até 3 sinais por dia, abertura da Ásia e Nova York.
 export const DEFAULT_SETTINGS = {
-  riskPct: 0.5, limiar: 0.45, R: 2, stopAtr: 1, maxBars: 24,
+  riskPct: 0.5, limiar: 0.5, R: 3, stopAtr: 1, maxBars: 36, maxPerDay: 3,
   newsFilter: true, newsWindow: 15, execMode: 'sinal', speed: 60, maxDD: 15,
   requireApproved: true, signalLife: 3,
   active: { XAUUSD: true, HK50: true },
   notify: { app: true, telegram: true, whatsapp: false, email: false },
-  sessions: { asia: true, londres: true, ny: true },
+  sessions: { asia: true, londres: false, ny: true },
 };
 
 const NEWS_LIST = [
@@ -35,7 +37,8 @@ export function createEngine() {
   const bus = createBus();
   const settings = structuredClone(DEFAULT_SETTINGS);
   const today = new Date();
-  const t0 = Math.floor(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 7, 0) / 1000);
+  // O mercado simulado começa 15 minutos antes de Nova York (12h UTC), para a demonstração.
+  const t0 = Math.floor(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 11, 45) / 1000);
   const feeds = {
     XAUUSD: new Feed('XAUUSD', 11, t0 - 3000 * 60, 3000),
     HK50: new Feed('HK50', 22, t0 - 3000 * 60, 3000),
@@ -82,11 +85,20 @@ export function createEngine() {
     return news.filter((n) => n.time >= t - settings.newsWindow * 60).slice(0, limit);
   }
 
-  function sessionOk(t) {
+  function sessionOf(t) {
     const h = new Date(t * 1000).getUTCHours();
-    if (h >= 7 && h < 12) return settings.sessions.londres;
-    if (h >= 12 && h < 17) return settings.sessions.ny;
-    return settings.sessions.asia;
+    if (h >= 0 && h < 3) return 'asia';
+    if (h >= 7 && h < 12) return 'londres';
+    if (h >= 12 && h < 17) return 'ny';
+    return null;
+  }
+  function sessionOk(t) {
+    const s = sessionOf(t);
+    return s ? settings.sessions[s] : false;
+  }
+  function signalsToday(t) {
+    const day = Math.floor(t / 86400);
+    return signals.filter((s) => !s.demo && Math.floor(s.time / 86400) === day).length;
   }
 
   // ---------- Semáforo ----------
@@ -142,14 +154,15 @@ export function createEngine() {
     const lab = labs[sym];
     const p = ft.side && lab ? predict(lab.model, ft.x) : null;
     const t = m5[i].time + 300;
-    const d = { id: decisions.length + 1, sym, time: t, regime: ft.regime, p, x: ft.x, atr: ft.atr, close: ft.close, action: 'observa', reason: '' };
+    const d = { id: decisions.length + 1, sym, time: t, regime: ft.regime, p, x: ft.x, atr: ft.atr, close: ft.close, rsi: ft.rsi, action: 'observa', reason: '' };
     const sem = semaphore();
     const ev = newsAt(sym, t);
     const busy = broker.positions.some((x) => x.symbol === sym) || signals.some((s) => s.sym === sym && s.status === 'novo');
     if (!settings.active[sym]) d.reason = 'ativo desligado nas configurações';
     else if (ft.side === 0) d.reason = 'mercado lateral: não opera';
     else if (settings.requireApproved && lab && !lab.verdict) d.reason = 'regra reprovada no laboratório: só observa';
-    else if (!sessionOk(t)) d.reason = 'fora do horário escolhido';
+    else if (!sessionOk(t)) d.reason = 'fora do horário (abertura da Ásia e Nova York)';
+    else if (signalsToday(t) >= settings.maxPerDay) d.reason = `limite de ${settings.maxPerDay} sinais por dia atingido`;
     else if (ev) d.reason = `notícia: ${ev.name}`;
     else if (sem.state === 'vermelho') d.reason = 'semáforo vermelho: pausado';
     else if (busy) d.reason = 'já existe operação ou sinal neste ativo';
@@ -169,7 +182,7 @@ export function createEngine() {
     return { riskUsd, lots, realRisk: lots * dist * vpp };
   }
 
-  function createSignal(sym, ft, p, t) {
+  function createSignal(sym, ft, p, t, demo = false) {
     const side = ft.side;
     const pr = priceOf(sym);
     const entry = side > 0 ? pr.ask : pr.bid;
@@ -182,12 +195,24 @@ export function createEngine() {
       time: t, expiresAt: t + settings.signalLife * 300, entry, sl, tp, dist, R: settings.R,
       lots: sz.lots, riskUsd: sz.realRisk, targetUsd: sz.realRisk * settings.R, p,
       exp: p * settings.R - (1 - p) - cost, cost, regime: ft.regime, atr: ft.atr,
-      contrib: contributions(labs[sym].model, ft.x), status: 'novo', modelVersion: labs[sym].version,
+      contrib: contributions(labs[sym].model, ft.x), status: 'novo', modelVersion: labs[sym].version, demo,
     };
     signals.unshift(sig);
     if (signals.length > 100) signals.pop();
     bus.emit('signal', sig);
-    if (settings.execMode === 'auto' && broker.account.trade_mode === 'DEMO') execute(sig.id, true);
+    if (settings.execMode === 'auto' && broker.account.trade_mode === 'DEMO' && !demo) execute(sig.id, true);
+  }
+
+  // Para a apresentação: cria um sinal agora com a leitura atual do modelo, ignorando os filtros.
+  function demoSignal(sym = 'XAUUSD') {
+    if (signals.some((s) => s.sym === sym && s.status === 'novo')) return null;
+    const f = feeds[sym];
+    const m5 = aggregate(f.m1, 5);
+    const ft = featureAt(m5, indicators(m5), m5.length - 1, sym);
+    if (!ft) return null;
+    const p = predict(labs[sym].model, ft.x);
+    createSignal(sym, { ...ft, side: ft.side || 1 }, p, now(), true);
+    return signals[0];
   }
 
   async function execute(id, auto = false) {
@@ -301,8 +326,8 @@ export function createEngine() {
 
   return {
     bus, settings, feeds, broker, labs, signals, decisions, live, equity, news, t0,
-    now, priceOf, getBars, dayChange, upcomingNews, newsAt, semaphore, report,
-    execute, dismiss, placeOrder, setSpeed, setSettings, trainAll, retrain,
+    now, priceOf, sessionOf, signalsToday, getBars, dayChange, upcomingNews, newsAt, semaphore, report,
+    execute, dismiss, placeOrder, demoSignal, setSpeed, setSettings, trainAll, retrain,
     stressLosses, stressBigLoss, resetAccount,
     pause(v) { paused = v; bus.emit('paused', paused); },
     get paused() { return paused; },

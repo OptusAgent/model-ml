@@ -4,7 +4,7 @@ import { fmt } from '../util.js';
 import { icon } from '../icons.js';
 import { $, px, REGIME_PILL, symIcon, sparkline, lightsHTML, createCandleChart, signalCardHTML, bindSignalActions } from '../ui.js';
 
-const TFS = [[1, 'M1'], [5, 'M5'], [15, 'M15'], [60, 'H1']];
+const TFS = [[1, 'M1'], [2, 'M2'], [5, 'M5'], [15, 'M15'], [60, 'H1']];
 
 export default {
   title: 'Painel',
@@ -46,7 +46,7 @@ export default {
               <div class="seg" id="tfSeg">${TFS.map(([v, l]) => `<button data-tf="${v}">${l}</button>`).join('')}</div>
             </div>
           </div>
-          <div class="chart-box" id="chart"><div class="chart-legend"><span>Setas = sinais do modelo</span><span>Bolinhas = stop/alvo atingido</span><span>Linhas = posição aberta</span></div></div>
+          <div class="chart-box" id="chart"><div class="chart-legend"><span>Setas = sinais do modelo</span><span>Bolinhas = stop/alvo atingido</span><span>Linhas = posição aberta</span><span>Roxo embaixo = RSI(10) · traços verde/vermelho = divergência</span></div></div>
           <div class="muted" style="font-size:.78rem" id="cChance"></div>
         </div>
         <div class="col">

@@ -2,6 +2,7 @@
 import { SYMBOLS } from './market.js';
 import { fmt } from './util.js';
 import { icon } from './icons.js';
+import { rsiOf, divergencesOf, RSI_PERIOD, BINARY_KEYS } from './features.js';
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -44,7 +45,7 @@ export function contribHTML(contrib) {
     const w = (Math.abs(c.c) / max) * 50;
     const col = c.c >= 0 ? 'var(--green)' : 'var(--red)';
     const style = c.c >= 0 ? `left:50%;width:${w}%;background:${col}` : `right:50%;width:${w}%;background:${col}`;
-    return `<div class="c-row"><span title="${c.help}">${c.label} <span class="muted num">(${fmt.num(c.value, c.key === 'varreu_favor' || c.key === 'varreu_contra' || c.key === 'londres' || c.key === 'ny' || c.key === 'recuo' ? 0 : 2)})</span></span><div class="c-bar"><i style="${style}"></i></div></div>`;
+    return `<div class="c-row"><span title="${c.help}">${c.label} <span class="muted num">(${fmt.num(c.value, BINARY_KEYS.has(c.key) ? 0 : 2)})</span></span><div class="c-bar"><i style="${style}"></i></div></div>`;
   }).join('')}</div>`;
 }
 
@@ -68,12 +69,45 @@ export function createCandleChart(container, engine, opts = {}) {
   const series = chart.addCandlestickSeries({
     upColor: '#2bd47d', downColor: '#ff5d68', borderVisible: false, wickUpColor: '#2bd47d', wickDownColor: '#ff5d68',
   });
-  let lines = [];
+  series.priceScale().applyOptions({ scaleMargins: { top: 0.05, bottom: 0.3 } });
+  // RSI(10) num painel embaixo, com as linhas de 70 e 30, como pediu o Elton.
+  const rsiSeries = chart.addLineSeries({
+    priceScaleId: 'rsi', color: '#9b7bff', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true,
+    crosshairMarkerVisible: false, title: `RSI(${RSI_PERIOD})`, priceFormat: { type: 'price', precision: 0, minMove: 1 },
+  });
+  chart.priceScale('rsi').applyOptions({ scaleMargins: { top: 0.76, bottom: 0.02 }, borderVisible: false });
+  rsiSeries.createPriceLine({ price: 70, color: 'rgba(255,93,104,.45)', lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '70' });
+  rsiSeries.createPriceLine({ price: 30, color: 'rgba(43,212,125,.45)', lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '30' });
+  let lines = [], divSeries = [], divMarks = [], data = [];
+
+  function drawDivergences() {
+    for (const s of divSeries) chart.removeSeries(s);
+    divSeries = []; divMarks = [];
+    const rsi = rsiOf(data);
+    const divs = divergencesOf(data, rsi).filter((d) => d.at < data.length).slice(-8);
+    for (const d of divs) {
+      const col = d.type === 'alta' ? '#2bd47d' : '#ff5d68';
+      const key = d.type === 'alta' ? 'low' : 'high';
+      const opts = { color: col, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false };
+      const ps = chart.addLineSeries(opts);
+      ps.setData([{ time: data[d.i1].time, value: data[d.i1][key] }, { time: data[d.i2].time, value: data[d.i2][key] }]);
+      const rs = chart.addLineSeries({ ...opts, priceScaleId: 'rsi' });
+      rs.setData([{ time: data[d.i1].time, value: rsi[d.i1] }, { time: data[d.i2].time, value: rsi[d.i2] }]);
+      divSeries.push(ps, rs);
+      divMarks.push({ time: data[d.i2].time, position: d.type === 'alta' ? 'belowBar' : 'aboveBar', color: col, shape: 'circle', text: d.type === 'alta' ? 'Div. alta' : 'Div. baixa' });
+    }
+  }
+  function updateRsi() {
+    const rsi = rsiOf(data);
+    rsiSeries.setData(data.map((b, i) => ({ time: b.time, value: rsi[i] })));
+  }
 
   function load() {
-    const bars = engine.getBars(sym, tf);
-    series.setData(bars.slice(-600));
+    data = engine.getBars(sym, tf).slice(-600);
+    series.setData(data);
     series.applyOptions({ priceFormat: { type: 'price', precision: SYMBOLS[sym].digits, minMove: 1 / 10 ** SYMBOLS[sym].digits } });
+    updateRsi();
+    drawDivergences();
     markers();
     refreshLines();
   }
@@ -81,9 +115,18 @@ export function createCandleChart(container, engine, opts = {}) {
     const bars = engine.getBars(sym, tf);
     return bars[bars.length - 1];
   }
+  function onTick() {
+    const b = lastBar();
+    if (!b) return;
+    series.update(b);
+    if (data.length && data[data.length - 1].time === b.time) data[data.length - 1] = b;
+    else { data.push(b); if (data.length > 600) data.shift(); }
+    const rsi = rsiOf(data.slice(-200));
+    rsiSeries.update({ time: b.time, value: rsi[rsi.length - 1] });
+  }
   function markers() {
     const span = tf * 60;
-    const ms = [];
+    const ms = [...divMarks];
     for (const s of engine.signals) {
       if (s.sym !== sym) continue;
       ms.push({ time: Math.floor((s.time - 300) / span) * span, position: s.side > 0 ? 'belowBar' : 'aboveBar', color: s.side > 0 ? '#2bd47d' : '#ff5d68', shape: s.side > 0 ? 'arrowUp' : 'arrowDown', text: s.id });
@@ -112,7 +155,8 @@ export function createCandleChart(container, engine, opts = {}) {
     }
   }
   const offs = [
-    engine.bus.on('tick', (t) => { if (t.sym === sym) { const b = lastBar(); if (b) series.update(b); } }),
+    engine.bus.on('tick', (t) => { if (t.sym === sym) onTick(); }),
+    engine.bus.on('candle', (c) => { if (c.sym === sym && (c.candle.time + 60) % (tf * 60) === 0) { drawDivergences(); markers(); } }),
     engine.bus.on('signal', () => { markers(); refreshLines(); }),
     engine.bus.on('signalUpdate', () => { markers(); refreshLines(); }),
     engine.bus.on('positions', refreshLines),
@@ -138,7 +182,7 @@ export function signalCardHTML(sig, engine, compact = false) {
   const life = Math.max(0, (sig.expiresAt - engine.now()) / (s.signalLife * 300));
   const side = sig.side > 0 ? 'buy' : 'sell';
   return `<div class="signal-card ${side}" data-sig="${sig.id}">
-    <div class="card-h"><span class="pill ${sig.side > 0 ? 'green' : 'red'}">${icon('zap', 12)} Sinal ${sig.id}</span><span class="muted" style="font-size:.78rem">${fmt.time(sig.time)} · modelo ${sig.modelVersion}</span></div>
+    <div class="card-h"><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill ${sig.side > 0 ? 'green' : 'red'}">${icon('zap', 12)} Sinal ${sig.id}</span>${sig.demo ? '<span class="pill amber">demonstração · ignora os filtros</span>' : ''}</span><span class="muted" style="font-size:.78rem">${fmt.time(sig.time)} · modelo ${sig.modelVersion}</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${symIcon(sig.sym)}<div><div class="side ${sig.side > 0 ? 'pos' : 'neg'}">${sig.side > 0 ? 'COMPRAR' : 'VENDER'} ${sig.sym}</div><span class="muted" style="font-size:.8rem">Tendência de ${sig.regime} · ${fmt.lots(sig.lots)} lote</span></div></div>
     <div>
       <div class="muted" style="font-size:.76rem;font-weight:600;margin-bottom:6px">Chance de bater o alvo (o traço amarelo é o limite)</div>
