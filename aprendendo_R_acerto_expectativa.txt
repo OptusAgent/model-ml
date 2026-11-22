@@ -1,0 +1,951 @@
+=====================================================================
+        APRENDENDO A AVALIAR UMA OPERAÇÃO NO MERCADO
+        (explicado para quem nunca mexeu com finanças)
+=====================================================================
+
+Este material usa os MEUS exemplos, os que eu calculei e mandei
+conferir. Onde eu errei, está o erro e o porquê.
+
+Sumário
+  1. Stop e alvo: as duas saídas combinadas antes
+  2. Quanto eu entro (dinheiro)
+  3. O R: a régua de medir ganhos e perdas
+  4. Acompanhando o R durante a operação
+  5. Acerto mínimo
+  6. Meus exemplos, um por um (com correções)
+  7. Expectativa: o saco de bolinhas
+  8. As operações: de onde vêm e como acontecem
+  9. O que o app vai fazer
+ 10. Uma regra, passo a passo
+ 11. A regra aprendeu ou só decorou? (Walk Forward)
+ 12. Ao vivo: vigiando se a regra continua funcionando
+ 13. Dúvidas: limites, avisos e overfitting
+ 14. O modelo: o computador aprende sozinho quando comprar
+ 15. Vazamento do futuro
+ 16. Quanto arriscar em cada operação
+ 17. Os dados: de onde vêm os preços e como ler cada um
+ 18. Juntar as peças e montar o app
+ 19. Como aparece na tela da corretora
+ 20. Colinha final
+
+
+---------------------------------------------------------------------
+1. STOP E ALVO: AS DUAS SAÍDAS COMBINADAS ANTES
+---------------------------------------------------------------------
+
+Antes de comprar, você decide duas saídas:
+
+  ALVO (Take Profit): "se subir até aqui, eu vendo e fico com o lucro."
+  STOP (Stop Loss):   "se cair até aqui, eu vendo e aceito a perda."
+
+    3.280 ------------------  ALVO  (linha de cima)
+    3.200   ●  entrada (comprei aqui)
+    3.180 ------------------  STOP  (linha de baixo)
+
+A primeira linha que o preço tocar decide o resultado.
+
+Quem fecha a operação? A CORRETORA. Você digita o stop e o alvo
+junto com a compra, e ela fecha sozinha quando o preço toca um dos
+dois. Você não precisa estar olhando.
+
+
+---------------------------------------------------------------------
+2. QUANTO EU ENTRO (DINHEIRO)
+---------------------------------------------------------------------
+
+     Entrada em dinheiro = cotas × preço
+
+  Onça a 2.650, 10 cotas:  10 × 2.650 = 26.500
+  Onça a 3.200, 10 cotas:  10 × 3.200 = 32.000
+
+
+---------------------------------------------------------------------
+3. O R: A RÉGUA DE MEDIR GANHOS E PERDAS
+---------------------------------------------------------------------
+
+     >>> O R NASCE DO STOP. <<<
+
+     1R = entrada − stop  (o quanto eu aceito perder)
+     Alvo em R = distância do alvo ÷ 1R
+
+  Bateu o alvo -> ganhei o alvo em R (ex.: +4R)
+  Bateu o stop -> perdi -1R (exatamente o que arrisquei)
+
+Jeito certo de falar:
+  ERRADO: "o R é 1,43"
+  CERTO:  "1R vale 35, e o alvo vale 1,43R"
+
+CUIDADO: não misture 1 cota com todas as cotas.
+  Ou faz tudo por 1 cota, ou faz tudo com o total das cotas.
+  O alvo em R dá o mesmo nos dois jeitos.
+
+
+---------------------------------------------------------------------
+4. ACOMPANHANDO O R DURANTE A OPERAÇÃO
+---------------------------------------------------------------------
+
+Pegue o lucro que aparece na tela e divida pelo seu 1R.
+
+  Exemplo: onça a 2.650, stop 2.630, alvo 2.690, 10 cotas
+  (1R = 200)
+
+  Preço agora   Lucro na tela   ÷ 200          Em R
+  2.670         +200            200 ÷ 200      +1R
+  2.650         0               0 ÷ 200        0R
+  2.640         −100            −100 ÷ 200     −0,5R
+
+  Tocou 2.690 -> +400 = +2R (a corretora fecha)
+  Tocou 2.630 -> −200 = −1R (a corretora fecha)
+
+
+---------------------------------------------------------------------
+5. ACERTO MÍNIMO
+---------------------------------------------------------------------
+
+"Acerto" = de cada 100 operações, quantas bateram o ALVO.
+
+Acerto mínimo = quanto preciso acertar para NÃO PERDER (empatar).
+
+     acerto mínimo = 1 ÷ (1 + alvo em R)
+
+Por que o "1 +"? Alvo de 3R: 1 acerto (+3R) paga 3 erros (−1R cada).
+O grupo de empate é 1 acerto + 3 erros = 4 operações -> 1 ÷ 4 = 25%.
+
+  Alvo     Acerto mínimo
+  1R       50%
+  2R       33%
+  3R       25%
+  4R       20%
+
+
+---------------------------------------------------------------------
+6. MEUS EXEMPLOS, UM POR UM (COM CORREÇÕES)
+---------------------------------------------------------------------
+
+Sempre os mesmos passos:
+  1R = entrada − stop
+  Alvo em R = (alvo − entrada) ÷ 1R
+  Acerto mínimo = 1 ÷ (1 + alvo em R)
+
+
+EXEMPLO A  -  Ouro a 1.750
+...................................................................
+  Entrada 1.750 · Stop 1.715 · Alvo 1.800
+  1R = 1.750 − 1.715 = 35
+  Alvo = 50 ÷ 35 = 1,43R
+  Acerto mínimo = 1 ÷ 2,43 = cerca de 41%
+
+  O que eu escrevi: "o R é 50/35 = 1,43R"
+  Correção: conta certa, nome trocado. 1R = 35. O ALVO vale 1,43R.
+
+
+EXEMPLO B  -  Ouro a 2.430
+...................................................................
+  Entrada 2.430 · Stop 2.400 · Alvo 2.520
+  1R = 30                                   ✔
+  Alvo = 90 ÷ 30 = 3R                       ✔
+  Acerto mínimo que eu escrevi: 33,33%      ✘
+
+  Onde errei: fiz 1 ÷ 3. Esqueci o "1 +".
+  Certo: 1 ÷ (1 + 3) = 1 ÷ 4 = 25%
+
+
+EXEMPLO C  -  Grama de ouro 24K, em reais
+...................................................................
+  Entrada 118,43 · Stop 112,00 · Alvo 126,00
+  1R = 6,43                                 ✔
+  Alvo = 7,57 ÷ 6,43 = 1,18R                ✔
+  Acerto mínimo = 1 ÷ 2,18 = 45,87%         ✔
+  Acertei tudo. O R funciona igual em reais e gramas.
+
+
+EXEMPLO D  -  Onça a 2.650, 10 cotas
+...................................................................
+  Entrada 2.650 · Stop 2.630 · Alvo 2.690
+  Entrada em dinheiro = 10 × 2.650 = 26.500
+
+  O que eu escrevi: 1R = 20, distância = 400, alvo = 20R   ✘
+  Onde errei: dividi 400 (das 10 cotas) por 20 (de 1 cota).
+
+  Certo:
+    Por cota:     1R = 20,  distância = 40,  alvo = 40 ÷ 20 = 2R
+    Com 10 cotas: 1R = 200, distância = 400, alvo = 400 ÷ 200 = 2R
+
+
+EXEMPLO E  -  Onça a 3.200, 10 cotas
+...................................................................
+  Entrada 3.200 · Stop 3.180 · Alvo 3.280
+  Entrada em dinheiro = 10 × 3.200 = 32.000
+
+    Por cota:     1R = 20,  distância = 80,  alvo = 80 ÷ 20 = 4R    ✔
+    Com 10 cotas: 1R = 200, distância = 800, alvo = 800 ÷ 200 = 4R  ✔
+    Acerto mínimo = 1 ÷ (1 + 4) = 1 ÷ 5 = 20%                       ✔
+
+  Acertei tudo.
+  Detalhe de escrita: é 1 ÷ 5, não 1 ÷ 5R (o 5 é só um número).
+
+
+---------------------------------------------------------------------
+7. EXPECTATIVA: O SACO DE BOLINHAS
+---------------------------------------------------------------------
+
+A pergunta da expectativa:
+  "Repetindo essa mesma operação muitas vezes, quanto sobra,
+   em média, por operação?"
+
+O JOGO
+
+  Um saco com 10 bolinhas:
+    3 verdes    -> cada uma vale +800
+    7 vermelhas -> cada uma vale −200
+
+  Você tira uma bolinha sem olhar, anota o valor e DEVOLVE.
+  Cada tirada é uma operação.
+
+  Na operação da onça a 3.200 com 10 cotas (Exemplo E):
+    Verde    = bateu o alvo (3.280) -> +800
+    Vermelha = bateu o stop (3.180) -> −200
+
+JOGANDO 20 VEZES
+
+  Nº  Bolinha    Valor   Quanto tenho até agora
+   1  vermelha   −200    −200
+   2  vermelha   −200    −400
+   3  verde      +800    +400
+   4  vermelha   −200    +200
+   5  vermelha   −200    0
+   6  vermelha   −200    −200
+   7  verde      +800    +600
+   8  vermelha   −200    +400
+   9  vermelha   −200    +200
+  10  verde      +800    +1.000
+  11  vermelha   −200    +800
+  12  vermelha   −200    +600
+  13  vermelha   −200    +400
+  14  verde      +800    +1.200
+  15  vermelha   −200    +1.000
+  16  vermelha   −200    +800
+  17  verde      +800    +1.600
+  18  vermelha   −200    +1.400
+  19  vermelha   −200    +1.200
+  20  verde      +800    +2.000
+
+  Final: +2.000 em 20 jogadas.
+  2.000 ÷ 20 = +100 por jogada  <- ISSO É A EXPECTATIVA
+
+TRÊS COISAS QUE A TABELA MOSTRA
+
+  1. Nenhuma jogada deu 100. Cada uma deu +800 ou −200.
+     O 100 só aparece quando você junta muitas.
+  2. No começo pode parecer que está dando errado.
+     Depois de 2 jogadas eu estava com −400.
+  3. Mesmo errando mais do que acertando (14 vermelhas, 6 verdes),
+     ganhei, porque cada verde vale 4 vezes uma vermelha.
+
+O ATALHO: A CONTA SEM PRECISAR JOGAR
+
+  3 verdes    × 800 = +2.400
+  7 vermelhas × 200 = −1.400
+  Total do saco     = +1.000
+  ÷ 10 bolinhas     = +100 por bolinha  (= +0,5R, porque 100 ÷ 200)
+
+MUDANDO AS BOLINHAS DO SACO
+
+  O saco sempre tem 10. Vermelhas = 10 − verdes.
+
+  Verdes  Vermelhas  Verdes colocam     Vermelhas tiram     Saldo    ÷10
+  1       9          1 × 800 = +800     9 × 200 = −1.800    −1.000   −100
+  2       8          2 × 800 = +1.600   8 × 200 = −1.600    0        0
+  3       7          3 × 800 = +2.400   7 × 200 = −1.400    +1.000   +100
+  5       5          5 × 800 = +4.000   5 × 200 = −1.000    +3.000   +300
+
+  −100 -> o dinheiro vai sumindo
+     0 -> fica onde está (é o acerto mínimo de 20%: 2 em 10)
+  +100 -> o dinheiro vai crescendo
+  +300 -> cresce mais rápido
+
+A PARTE DIFÍCIL
+
+  No mercado você NÃO VÊ dentro do saco. Não sabe quantas são verdes.
+  O jeito de descobrir é olhar o passado: contar quantas vezes essa
+  entrada bateu o alvo e quantas bateu o stop.
+
+
+---------------------------------------------------------------------
+8. AS OPERAÇÕES: DE ONDE VÊM E COMO ACONTECEM
+---------------------------------------------------------------------
+
+QUANTAS OPERAÇÕES?
+  Ninguém escolhe. É quantas vezes a sua situação de entrada
+  aconteceu. Se no último ano ela apareceu 150 vezes, são 150
+  operações. Quanto mais, mais confiável. Com 10, a sorte pesa muito.
+
+UMA DEPOIS DA OUTRA (não são simultâneas)
+  Op. 1: compra 10 cotas a 3.200 (32.000) -> alvo  +800 -> conta 32.800
+  Op. 2: outro dia, 10 cotas a 3.250 (32.500) -> stop −200 -> conta 32.600
+  Op. 3: outro dia, 10 cotas a 3.190 (31.900) -> alvo +800 -> conta 33.400
+  Op. 4: outro dia, 10 cotas a 3.230 (32.300) -> stop −200 -> conta 33.200
+
+  O ganho ou a perda fica na conta. Você entra de novo com 10 cotas,
+  mas o valor muda porque o preço muda.
+
+MANUAL OU AUTOMÁTICO?
+  Os dois.
+  Manual: você vê a situação e clica em comprar.
+  Programado: um robô no MT5 compra sozinho.
+  Fechar no stop ou no alvo é sempre automático, pela corretora.
+
+
+---------------------------------------------------------------------
+9. O QUE O APP VAI FAZER
+---------------------------------------------------------------------
+
+  1. Olha o passado: acha todas as vezes em que a situação de entrada
+     aconteceu e confere se cada uma bateu o alvo ou o stop.
+  2. Conta: quantas verdes e quantas vermelhas tem no saco
+     (acerto, acerto mínimo e expectativa).
+  3. Olha o presente: quando a situação aparece de novo, avisa você,
+     ou já compra, se for programado para isso.
+
+
+---------------------------------------------------------------------
+10. UMA REGRA, PASSO A PASSO
+---------------------------------------------------------------------
+
+A regra diz QUANDO comprar. Cada momento do mercado tem um saco
+diferente; a regra tenta achar os momentos com mais bolinhas verdes.
+
+PASSO 1: ESCREVER A REGRA
+  Quando comprar: depois de 3 dias seguidos de queda,
+                  compra no preço do 3º dia
+  Stop:  entrada − 20  (perde 200 com 10 cotas)
+  Alvo:  entrada + 80  (ganha 800 com 10 cotas)
+  Uma operação por vez: só procura nova compra depois que a
+  anterior fechar.
+  (Para simplificar, um preço por dia.)
+
+PASSO 2: PERCORRER O HISTÓRICO, DIA POR DIA
+  São 18 DIAS. Neles acontecem 3 OPERAÇÕES (A, B e C).
+
+  Dia  Preço  O que acontece                              Quem vigia
+   1   3.200  início                                      app
+   2   3.190  queda 1                                     app
+   3   3.175  queda 2                                     app
+   4   3.160  queda 3 -> COMPRA A a 3.160                 app
+              (stop 3.140, alvo 3.240)
+   5   3.185  operação aberta                             corretora
+   6   3.210  operação aberta                             corretora
+   7   3.245  passou de 3.240 -> BATEU O ALVO: +800       corretora
+   8   3.230  queda 1                                     app
+   9   3.220  queda 2                                     app
+  10   3.205  queda 3 -> COMPRA B a 3.205                 app
+              (stop 3.185, alvo 3.285)
+  11   3.195  operação aberta                             corretora
+  12   3.180  passou de 3.185 -> BATEU O STOP: −200       corretora
+  13   3.170  queda 1                                     app
+  14   3.160  queda 2                                     app
+  15   3.150  queda 3 -> COMPRA C a 3.150                 app
+              (stop 3.130, alvo 3.230)
+  16   3.165  operação aberta                             corretora
+  17   3.140  operação aberta                             corretora
+  18   3.125  passou de 3.130 -> BATEU O STOP: −200       corretora
+
+PASSO 3: CONTAR AS BOLINHAS
+  Alvo: 1 × 800 = +800
+  Stop: 2 × 200 = −400
+  Saldo: +400 em 3 operações
+  Acerto: 1 em 3 = 33%
+  Expectativa: 400 ÷ 3 = +133 por operação
+
+PASSO 4: COMPARAR COM O ACERTO MÍNIMO
+  Alvo de 4R -> acerto mínimo de 20%. A regra acertou 33%.
+
+PASSO 5: DESCONFIAR DE POUCA OPERAÇÃO
+  3 operações é como tirar 3 bolinhas e achar que sabe o que tem
+  no saco. Por isso o app roda a mesma regra em anos de histórico:
+
+  Histórico  Compras  Alvo  Stop  Acerto  Expectativa
+  18 dias    3        1     2     33%     +133 (pouco confiável)
+  5 anos     150      45    105   30%     +100 (confiável)
+  (a linha de 5 anos é um exemplo)
+
+  5 anos: 45 × 800 − 105 × 200 = 36.000 − 21.000 = 15.000
+          15.000 ÷ 150 = +100
+
+PASSO 6: DECIDIR
+  Acerto acima do mínimo, com muitas operações -> a regra serve.
+  O app passa a vigiar o preço ao vivo e avisa no 3º dia de queda.
+  Acerto abaixo ou perto do mínimo -> descarta e testa outra regra.
+
+DÚVIDAS QUE EU TIVE
+
+  1. Entre as compras, quem fica monitorando?
+     Dias de "operação aberta": a CORRETORA vigia stop e alvo.
+     Dias de "queda 1, queda 2": o APP conta as quedas,
+     esperando a 3ª para mandar comprar.
+
+  2. As compras são separadas ou acumuladas?
+     SEPARADAS: cada compra é uma operação nova de 10 cotas.
+     O resultado de todas vai para a MESMA CONTA:
+       Início   32.000
+       Compra A +800 -> 32.800
+       Compra B −200 -> 32.600
+       Compra C −200 -> 32.400
+
+  3. Bateu no alvo ou no stop, a operação para?
+     SIM. A corretora vende as 10 cotas, a operação termina, o
+     resultado vai para a conta e o app volta a contar as quedas
+     do zero.
+
+
+---------------------------------------------------------------------
+11. A REGRA APRENDEU OU SÓ DECOROU? (WALK FORWARD)
+---------------------------------------------------------------------
+
+O PROBLEMA
+  O app testa muitas regras no mesmo passado. Se testar 1.000
+  regras, alguma vai parecer ótima só por sorte, porque se encaixou
+  nos dias que já aconteceram.
+
+  É o aluno que decora o gabarito da prova antiga: tira 10 nela e
+  vai mal na prova nova.
+
+EXEMPLO (números de exemplo)
+  Regra                                               Acerto no passado
+  A: comprar depois de 3 quedas                       30%
+  B: 3 quedas + só às terças + onça entre             60%
+     3.150 e 3.210
+
+  A regra B parece muito melhor. Mas tem tantas condições que só
+  serve para aqueles dias específicos. Ela decorou.
+
+A SOLUÇÃO: SEPARAR O PASSADO EM DUAS PARTES
+
+  |------ ESTUDO (anos 1 a 4) ------|-- PROVA (ano 5) --|
+     o app escolhe a regra aqui        o app nunca viu
+
+  1. O app procura a melhor regra SÓ nos anos 1 a 4.
+  2. Depois testa essa regra no ano 5, que ele nunca viu.
+
+  Regra   Acerto no estudo   Acerto na prova   Resultado
+  A       30%                28%               continuou acima de 20%: APRENDEU
+  B       60%                15%               caiu abaixo de 20%: DECOROU
+
+REPETINDO A PROVA VÁRIAS VEZES
+  Uma prova só ainda pode ser sorte. O app avança no tempo e repete:
+
+  Rodada   Estuda        Faz a prova
+  1        anos 1 e 2    ano 3
+  2        anos 2 e 3    ano 4
+  3        anos 3 e 4    ano 5
+
+  Regra A:  prova 29%, 27%, 28%  -> passou em todas   -> SERVE
+  Regra B:  prova 14%, 17%, 15%  -> reprovou em todas -> DESCARTA
+
+  Se a regra passa em TODAS as provas, ela serve.
+  É o Walk Forward do post do Robert Pardo.
+
+RESUMO DO QUE O APP FAZ ATÉ AQUI
+  1. Testa regras no passado.
+  2. Separa estudo e prova, e repete avançando no tempo.
+  3. Só a regra que passa nas provas vai para o ao vivo.
+
+
+---------------------------------------------------------------------
+12. AO VIVO: VIGIANDO SE A REGRA CONTINUA FUNCIONANDO
+---------------------------------------------------------------------
+
+A regra passou nas provas. Agora vai para o mercado de verdade, mas
+com cuidado, porque O SACO PODE MUDAR COM O TEMPO. O mercado de hoje
+não é igual ao de 5 anos atrás.
+
+ETAPA 1: COMEÇAR SEM DINHEIRO DE VERDADE
+  A corretora oferece uma CONTA DEMO: dinheiro de mentira, preços
+  reais. O app opera a regra ali por um tempo para ver se ela se
+  comporta como nas provas.
+
+ETAPA 2: OPERAR AO VIVO
+  O app vigia o preço. No 3º dia de queda, avisa você ou já compra.
+  Stop e alvo vão junto, e a corretora fecha a operação.
+
+ETAPA 3: CONFERIR DE TEMPOS EM TEMPOS
+  A cada 20 operações, o app compara o acerto real com o das provas
+  (≈ 28%) e com o mínimo (20%).
+
+  Operações  Alvo  Stop  Acerto  Conta do bloco                Expectativa  Situação
+  1 a 20     6     14    30%     6×800 − 14×200 = +2.000       +100         normal
+  21 a 40    5     15    25%     5×800 − 15×200 = +1.000       +50          normal
+  41 a 60    3     17    15%     3×800 − 17×200 = −1.000       −50          ABAIXO DO MÍNIMO
+
+ETAPA 4: SE O ACERTO CAIR, PARAR E REFAZER A PROVA
+  1. O app PAUSA a regra.
+  2. Refaz o ESTUDO e a PROVA usando os anos mais recentes,
+     incluindo os dados novos.
+  3. Passou de novo -> volta a operar.
+     Não passou     -> descarta e procura outra regra.
+
+  Refazer estudo e prova com dados novos = RETREINAR.
+
+RESUMO DO QUE O APP FAZ ATÉ AQUI
+  1. Testa regras no passado.
+  2. Separa estudo e prova, avançando no tempo.
+  3. Opera ao vivo (primeiro na conta demo).
+  4. Confere o acerto de tempos em tempos e, se cair, pausa e
+     refaz a prova.
+
+
+---------------------------------------------------------------------
+13. DÚVIDAS: LIMITES, AVISOS E OVERFITTING
+---------------------------------------------------------------------
+
+DÚVIDA 1: QUAIS LIMITES PARA PAUSAR E REFAZER O ESTUDO? E OS AVISOS?
+
+  Primeiro, cuidado com a sorte. Mesmo uma regra boa (acerta 28%)
+  varia bastante num bloco de 20 operações:
+
+    Alvos num bloco de 20   Frequência numa regra boa (28%)
+    3 ou menos (15%)        ≈ 15% das vezes
+    4 a 8                   a maioria das vezes
+    9 ou mais               raro
+
+  Um bloco ruim sozinho NÃO prova nada. Pode ser só azar.
+  Por isso o limite olha para MAIS operações.
+
+  Os limites são definidos ANTES do ao vivo, a partir das provas
+  (acerto ≈ 28%, mínimo 20%). Funcionam como um semáforo:
+
+    Sinal      Quando                                    O que o app faz
+    VERDE      últimas 100 acima de 24%                  continua operando
+    AMARELO    últimas 100 entre 20% e 24%, ou           avisa você e continua
+               um bloco de 20 abaixo de 20%
+    VERMELHO   últimas 100 abaixo de 20%, ou             para, avisa e refaz
+               sequência de stops maior que a pior       estudo e prova
+               das provas (exemplo: 12)
+
+  Por que 100 operações? Com 100, uma regra boa só fica abaixo de 20%
+  por azar em ≈ 5% das vezes. Se ficou, provavelmente o saco mudou.
+
+  Além disso: refazer estudo e prova DE ROTINA (exemplo: a cada
+  6 meses), mesmo com tudo verde, para incluir os dados novos.
+
+  (24%, 100 operações, 12 stops e 6 meses são exemplos. Cada regra
+   tem os seus, calculados a partir das provas dela.)
+
+
+DÚVIDA 2: EXISTE LIMITE DE REGRAS NO HISTÓRICO? AS REGRAS SE REPETEM?
+
+  SIM, EXISTE LIMITE. O histórico é um só. Cada regra nova testada
+  nele é mais uma chance de achar uma que deu certo por sorte.
+  É como usar a mesma prova para 1.000 alunos: algum tira 10 chutando.
+
+  Como o app se protege:
+    1. Guarda um pedaço do histórico que NUNCA é usado (exemplo: o
+       último ano), como um COFRE. Só a regra final faz essa prova,
+       uma vez.
+
+         | ano 1 | ano 2 | ano 3 | ano 4 | ano 5 |
+         |------ estudo e provas ------| COFRE |
+
+    2. Conta quantas regras testou. Quanto mais testou, mais
+       exigente precisa ser com o resultado.
+    3. O ao vivo é a prova mais honesta: são dias que ainda não
+       existiam quando a regra foi escolhida.
+
+  AS REGRAS SE REPETEM?
+    O passado não se repete igual. As que costumam continuar
+    funcionando são SIMPLES e têm um MOTIVO (exemplo: depois de
+    quedas fortes, compradores voltam). Mesmo assim podem parar
+    quando o mercado muda ou muita gente usa a mesma regra.
+    Por isso existe o semáforo.
+
+
+DÚVIDA 3: OVERFITTING, COMO MEDIR E MONITORAR?
+
+  Overfitting é o "DECOROU": a regra se encaixou no passado e não
+  funciona no novo.
+
+  Quatro testes:
+
+    Teste                              Aprendeu (A)       Decorou (B)
+    Estudo × prova (quanto cai)        30% -> 28%         60% -> 15%
+    Mexer um pouco (3 -> 4 quedas,     continua parecido  desmorona
+      stop 20 -> 22)
+    Número de operações                150                12
+    Todas as rodadas                   passa em todas     passa em uma
+
+  Reprovou em qualquer um -> sinal de overfitting.
+
+  MONITORAR: é o semáforo da dúvida 1. Se o acerto ao vivo cai bem
+  abaixo do acerto das provas, a regra pode ter decorado.
+  O app pausa e refaz a prova.
+
+
+---------------------------------------------------------------------
+14. O MODELO: O COMPUTADOR APRENDE SOZINHO QUANDO COMPRAR
+---------------------------------------------------------------------
+
+Até aqui, VOCÊ inventava a regra ("3 dias de queda") e o app testava.
+Agora o COMPUTADOR procura sozinho quais momentos têm mais bolinhas
+verdes, olhando vários números ao mesmo tempo.
+É aqui que entra o MACHINE LEARNING.
+
+ETAPA 1: CADA MOMENTO VIRA UMA FICHA DE NÚMEROS
+  Para cada dia do histórico, o app preenche uma ficha e anota o que
+  aconteceu depois:
+
+  Dia  Quedas seguidas  Quanto caiu na semana  Ontem   Resultado
+  4    3                −40                    caiu    alvo
+  10   3                −25                    caiu    stop
+  15   3                −20                    caiu    stop
+  22   1                +10                    subiu   stop
+  ...  ...              ...                    ...     ...
+
+  Milhares de fichas, uma por momento do histórico.
+
+ETAPA 2: O MODELO ESTUDA AS FICHAS
+  Olhando as fichas do ESTUDO, ele descobre sozinho quais combinações
+  costumam terminar em alvo.
+  Exemplo: "3 quedas E queda grande na semana -> mais verdes".
+
+ETAPA 3: PARA UM MOMENTO NOVO, ELE DÁ UMA CHANCE
+  Não diz só "compra" ou "não compra". Diz:
+  "agora, a chance de bater o alvo é de 31%".
+  É como dizer quantas bolinhas verdes tem no saco DESTE momento.
+
+ETAPA 4: COMPRAR SÓ QUANDO A CHANCE PASSA DO MÍNIMO COM FOLGA
+  Operação: alvo +800, stop −200, mínimo 20%.
+  Expectativa = chance × 800 − (resto) × 200
+
+  Momento  Chance  Expectativa              Decisão
+  A        12%     96 − 176  = −80          não compra
+  B        22%     176 − 156 = +20          não compra (folga pequena)
+  C        31%     248 − 138 = +110         COMPRA
+  D        40%     320 − 120 = +200         COMPRA
+
+  O limite de compra (exemplo: 27%) fica acima dos 20% porque a
+  chance do modelo também pode errar um pouco.
+
+ETAPA 5: CONFERIR SE A CHANCE É HONESTA
+  Quando o modelo diz "30%", precisa acontecer CERCA DE 30% de verdade.
+  O app junta os momentos de cada chance e conta quantos bateram o alvo:
+
+  O modelo disse  Momentos  Bateram o alvo  Aconteceu  Situação
+  ≈ 20%           200       42              21%        honesto
+  ≈ 30%           150       44              29%        honesto
+  ≈ 40%           80        18              22%        EXAGEROU
+
+  Se o modelo exagera, as compras dele valem menos do que parecem,
+  e ele precisa ser corrigido.
+
+O RESTO CONTINUA IGUAL
+  O modelo passa pelos mesmos cuidados da regra feita à mão:
+  estudo e prova avançando no tempo, cofre, conta demo, semáforo no
+  ao vivo e testes de overfitting.
+
+
+---------------------------------------------------------------------
+15. VAZAMENTO DO FUTURO
+---------------------------------------------------------------------
+
+O PROBLEMA
+  Na ficha do momento só pode entrar o que JÁ SE SABIA naquele
+  momento. Se entrar qualquer informação de depois, o modelo "cola"
+  na prova: acerta muito no histórico e erra tudo ao vivo.
+
+  É o aluno que fez a prova com o gabarito no bolso: nota alta,
+  mas não sabe nada.
+
+  É perigoso porque NÃO DÁ ERRO NA TELA: o resultado só parece ótimo.
+
+A REGRA DO RELÓGIO (compra às 10h de hoje)
+  Informação                     Ficou conhecida   Pode entrar?
+  Quedas seguidas até ontem      ontem 18:00       sim
+  Preço de abertura de hoje      hoje 09:00        sim
+  Preço das 10h                  hoje 10:00        sim
+  Preço das 14h                  hoje 14:00        NÃO (futuro)
+  Fechamento de hoje             hoje 18:00        NÃO (futuro)
+  Preço de amanhã                amanhã            NÃO (futuro)
+
+EXEMPLO COM OS 18 DIAS
+  Imagine que, sem querer, entrou na ficha o preço do dia seguinte:
+
+  Dia  Quedas seguidas  Preço de amanhã   Resultado
+  4    3                3.185 (subiu)     alvo
+  10   3                3.195 (caiu)      stop
+  15   3                3.165 (subiu)     stop
+
+  O modelo aprende "se amanhã sobe, compra" e acerta 70%, 80% no
+  histórico. Ao vivo, o preço de amanhã NÃO EXISTE AINDA, e ele volta
+  a acertar perto de 20%.
+
+                      Estudo   Ao vivo
+  Ficha com vazamento 75%      20%      -> enganou
+  Ficha honesta       30%      28%      -> parecidos
+  (números de exemplo)
+
+ONDE O FUTURO COSTUMA VAZAR SEM NINGUÉM PERCEBER
+  Erro: usar o fechamento do dia para comprar de manhã
+    Errado: compra às 10h usando o fechamento das 18h
+    Certo:  usar só o preço até as 10h
+  Erro: conta que inclui dias de depois
+    Errado: "quanto caiu na semana" de segunda a sexta, para comprar
+            na quarta
+    Certo:  contar só até a quarta
+  Erro: misturar estudo e prova
+    Errado: dias de prova no meio dos dias de estudo
+    Certo:  prova sempre DEPOIS do estudo, no tempo
+
+COMO O APP SE PROTEGE
+  1. Regra do relógio: cada número da ficha tem a hora em que ficou
+     conhecido. Só entra se essa hora for ANTES da compra.
+  2. Desconfiar de resultado bom demais: acerto muito alto (ex.: 70%
+     com alvo de 4R) é sinal de vazamento, não de regra genial.
+  3. Teste de atrasar: atrasa todos os números da ficha em 1 dia e
+     refaz o teste. Se o resultado desabar, o futuro estava vazando.
+  4. Conta demo: se o acerto na demo cair muito em relação ao estudo,
+     investigar vazamento antes de qualquer coisa.
+
+
+---------------------------------------------------------------------
+16. QUANTO ARRISCAR EM CADA OPERAÇÃO
+---------------------------------------------------------------------
+
+Até aqui sempre foram 10 cotas. Mas quantas cotas comprar é uma
+decisão que o app toma sozinho, e ela decide se a conta sobrevive
+às fases ruins.
+
+O PROBLEMA: SEQUÊNCIAS DE STOPS ACONTECEM
+  Nas provas, a pior sequência foi de 12 STOPS SEGUIDOS. Com uma
+  regra boa isso acontece, é só azar.
+
+  Conta de 32.000 depois de 12 stops seguidos, arriscando uma
+  porcentagem da conta em cada operação:
+
+  Arrisca por operação   Conta depois   Perdeu
+  1%                     28.364         −11%
+  2%                     25.111         −22%
+  5%                     17.292         −46%
+  10%                    9.038          −72%
+
+  PARA RECUPERAR, PRECISA GANHAR MAIS DO QUE PERDEU.
+  Quem perdeu 50% precisa ganhar 100% para voltar ao início.
+
+A REGRA: ARRISCAR UMA PORCENTAGEM PEQUENA E FIXA DA CONTA
+  Antes de cada compra, o app calcula:
+
+    Quanto arriscar = conta × porcentagem
+    Cotas = quanto arriscar ÷ 1R por cota
+
+  Exemplo: conta de 32.000, arriscando 0,5%
+
+                                Operação 1     Operação 2
+  Entrada                       3.200          3.200
+  Stop                          3.180          3.160
+  1R por cota                   20             40
+  Quanto arriscar (32.000×0,5%) 160            160
+  Cotas                         160÷20 = 8     160÷40 = 4
+  Se bater o stop               −160           −160
+
+  Com o stop mais longe, o app compra MENOS COTAS.
+  A perda fica sempre igual: 1R = 160.
+
+POR QUE PORCENTAGEM E NÃO UM VALOR FIXO
+  Conta caiu para 28.000  -> arrisca 140, compra menos.
+                             Protege nas fases ruins.
+  Conta subiu para 40.000 -> arrisca 200, compra mais.
+                             Aproveita as fases boas.
+
+O QUE O APP FAZ NESSE PASSO
+  1. Antes de cada compra, calcula as cotas pela conta acima.
+  2. Usa uma porcentagem pequena (exemplo: 0,5% a 1%).
+  3. Tem um LIMITE DE QUEDA DA CONTA (exemplo: se a conta cair 15%
+     desde o maior valor, pausa tudo). Entra junto com o semáforo.
+
+
+---------------------------------------------------------------------
+17. OS DADOS: DE ONDE VÊM OS PREÇOS E COMO LER CADA UM
+---------------------------------------------------------------------
+
+Tudo o que o app faz depende do HISTÓRICO DE PREÇOS. Nos 18 dias
+usamos UM PREÇO POR DIA, para simplificar. Na vida real o preço sobe
+e desce o dia inteiro, e isso muda o resultado.
+
+1. DE ONDE VEM O HISTÓRICO
+  O MT5 da corretora guarda anos de preços do ouro (XAUUSD) e permite
+  exportar. O app baixa esse histórico e trabalha em cima dele.
+
+2. O CANDLE: CADA PERÍODO VIRA 4 NÚMEROS
+  Cada período (1 minuto, 1 hora ou 1 dia) vem com 4 números:
+
+    Abertura    = preço no começo
+    Máxima      = o mais alto
+    Mínima      = o mais baixo
+    Fechamento  = preço no fim
+
+          │  <- máxima 3.245
+        ┌─┴─┐
+        │   │ <- fechamento 3.200
+        │   │
+        │   │ <- abertura 3.165
+        └─┬─┘
+          │  <- mínima 3.135
+
+3. O PROBLEMA: QUAL TOCOU PRIMEIRO?
+  Compra a 3.160, stop 3.140, alvo 3.240. Candle do dia seguinte:
+
+    Abertura 3.165 · Máxima 3.245 · Mínima 3.135 · Fechamento 3.200
+
+  A máxima passou do alvo (3.240) E a mínima passou do stop (3.140).
+  Tocou os dois no mesmo dia. QUAL VEIO PRIMEIRO?
+  Com o candle do dia, não dá para saber.
+
+  Como o app resolve:
+    1. Abre os CANDLES MENORES daquele dia (1 hora ou 1 minuto) e vê
+       a ordem. No exemplo: na hora 2 a mínima passou de 3.140 (stop),
+       e o alvo só foi tocado na hora 6. Resultado: −200.
+    2. Se ainda assim não der para saber, CONTA COMO STOP.
+       Melhor errar para o lado pessimista do que se enganar.
+
+4. DESCONTAR OS CUSTOS NO HISTÓRICO
+  Ao vivo, toda operação paga spread. No histórico, ninguém cobra.
+  Se o app não descontar, o teste fica mais bonito que a realidade.
+
+  Exemplo: spread de 0,30 × 10 cotas = 3 por operação.
+    Operação longa (alvo +800):  +100 − 3 = +97  (come 3% do lucro)
+    Operação curta (alvo +40):   +4 − 3   = +1   (come 75% do lucro)
+
+  Em operações curtas, com alvo pequeno, o spread pode comer todo
+  o lucro.
+
+5. CONFERIR A QUALIDADE DOS DADOS
+  Problema             Exemplo                          O que o app faz
+  Buracos              dias ou horas sem preço          marca e não opera ali
+  Preço errado         pico de 3.200 para 5.000 em 1 min descarta
+  Horário sem mercado  fim de semana, feriado           ignora
+
+  DADO RUIM GERA REGRA RUIM, mesmo com todo o resto bem feito.
+
+
+---------------------------------------------------------------------
+18. JUNTAR AS PEÇAS E MONTAR O APP
+---------------------------------------------------------------------
+
+AS 5 PEÇAS DO APP
+
+  Peça                O que faz                               Seções
+  1. Coletor          Baixa o histórico e os preços ao vivo   17
+                      do MT5 e confere a qualidade
+  2. Laboratório      Monta as fichas, testa regras e o       10, 11, 13,
+                      modelo: estudo, prova, cofre,           14, 15
+                      vazamento, overfitting
+  3. Vigia            Ao vivo, monta a ficha do momento,      14
+                      pede a chance ao modelo e decide
+                      se compra
+  4. Executor         Calcula as cotas e manda a ordem para   1, 16
+                      a corretora, com stop e alvo
+  5. Painel e avisos  Mostra conta, acerto e semáforo, e      12, 13
+                      manda mensagem no celular
+
+UM MOMENTO DO APP FUNCIONANDO
+
+  Coletor ── preço novo chegou
+     ↓
+  Vigia ── monta a ficha (só com o que já se sabe)
+     ↓       e pede a chance ao modelo: 31%
+     ↓       31% passou do limite de 27%? sim
+     ↓
+  Executor ── conta 32.000 × 0,5% = 160 -> 8 cotas
+     ↓         manda: compra 8 cotas, stop 3.180, alvo 3.280
+     ↓
+  Corretora ── vigia stop e alvo, fecha sozinha
+     ↓
+  Painel ── registra o resultado, atualiza acerto e semáforo
+             verde continua · amarelo avisa · vermelho pausa e avisa
+
+  Se a chance não passar do limite: o executor não manda nada e o app
+  espera o próximo preço.
+
+COMO CONSTRUIR: EM FASES, UMA SÓ DEPOIS QUE A ANTERIOR FUNCIONAR
+
+  Fase                  O que o app faz                      Dinheiro em risco
+  1. Laboratório        Só estuda o histórico e mostra se    nenhum
+                        a regra passa nas provas
+  2. Avisos             Vigia ao vivo e manda mensagem:      o Elton decide
+                        "comprar agora, stop X, alvo Y,
+                        Z cotas". O Elton decide e clica
+  3. Demo automática    Compra sozinho, na conta demo        nenhum
+  4. Real, pequeno      Compra sozinho na conta real,        pouco
+                        arriscando 0,5%
+
+PARA A REUNIÃO
+  As fases 1 e 2 são o primeiro entregável. Mostram ao Elton, com
+  números, se a ideia funciona, sem arriscar o dinheiro dele.
+  As fases 3 e 4 só começam se a 1 e a 2 derem certo.
+
+
+---------------------------------------------------------------------
+19. COMO APARECE NA TELA DA CORRETORA (MT5)
+---------------------------------------------------------------------
+
+No MT5 o ouro se chama XAUUSD e é cotado em dólares por onça.
+Os números abaixo são de exemplo.
+
+  Cotação:   Venda (Bid) 4.159,85   Compra (Ask) 4.160,15
+             Diferença 0,30 = SPREAD (a taxa escondida)
+
+  Ordem:     Volume 0,10 lote (= 10 onças)
+             Stop Loss 4.150,15  <- STOP
+             Take Profit 4.180,15 <- ALVO
+
+  O R NÃO aparece na tela. Você calcula:
+    1R   = (4.160,15 − 4.150,15) × 10 = US$ 100
+    Alvo = (4.180,15 − 4.160,15) × 10 = US$ 200 = 2R
+
+  Logo ao abrir aparece Lucro −3,00: é o spread (0,30 × 10).
+
+  Relatório depois de 20 operações (8 no alvo, 12 no stop):
+    Profit Trades (% of total): 8 (40%)   <- TAXA DE ACERTO
+    Expected Payoff:            20,00     <- EXPECTATIVA (= +0,2R)
+
+
+---------------------------------------------------------------------
+20. COLINHA FINAL
+---------------------------------------------------------------------
+
+  Quanto entro    = cotas × entrada
+  1R              = entrada − stop
+  Alvo em R       = (alvo − entrada) ÷ 1R
+  Acerto mínimo   = 1 ÷ (1 + alvo em R)      <- não esquecer o "1 +"
+  R na operação   = lucro na tela ÷ 1R
+  Expectativa     = (verdes × ganho − vermelhas × perda) ÷ total
+
+  Frases para lembrar:
+    - O R nasce do stop.
+    - Não misture 1 cota com todas as cotas.
+    - Nenhuma operação dá a expectativa; ela é a média de muitas.
+    - Acertar muito não basta: importa quanto ganha e quanto perde.
+    - No mercado não dá para ver o saco; o passado é que mostra.
+    - Regra = quando comprar + stop + alvo, testada em anos de histórico.
+    - Pouca operação engana: 3 bolinhas não mostram o saco.
+    - Regra boa no estudo precisa passar na prova (período que nunca viu),
+      em todas as rodadas. Se não passa, decorou.
+    - Ao vivo: começa na demo, confere a cada 20 operações e, se o
+      acerto cair abaixo do mínimo, pausa e retreina.
+    - Um bloco ruim pode ser azar: o semáforo olha 100 operações.
+    - Muitas regras no mesmo histórico = mais chance de sorte.
+      Guarde um cofre que nunca é usado.
+    - Overfitting = decorou: caiu muito na prova, desmorona ao mexer
+      um pouco ou tem poucas operações.
+    - Modelo: ficha de números -> chance -> compra só com folga
+      acima do mínimo. Conferir: disse 30%, aconteceu ≈ 30%.
+    - Vazamento do futuro: na ficha só entra o que já se sabia antes
+      da compra. Resultado bom demais, desconfie.
+    - Cotas = (conta × %) ÷ 1R por cota. Porcentagem pequena e fixa.
+      Stop mais longe = menos cotas; a perda no stop é sempre 1R.
+    - Candle = abertura, máxima, mínima, fechamento. Tocou stop e alvo
+      no mesmo candle? Candles menores; sem saber, conta como stop.
+    - Desconte o spread no histórico. Dado ruim gera regra ruim.
+    - O app: coletor -> laboratório -> vigia -> executor -> painel.
+      Fases: laboratório, avisos, demo automática, real pequeno.
+
+=====================================================================

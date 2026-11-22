@@ -1,0 +1,1516 @@
+<title>Laboratório do R</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: uma coluna de aula, um passo por vez, com trilha no topo e um laboratório interativo em cada passo */
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --sunk:#EEF0F3; --ink:#15202A; --muted:#5B6674; --line:#DCE0E5;
+  --gold:#9C6B00; --gold-strong:#C98F10; --gold-soft:#F6EBCF;
+  --win:#1C8556; --win-soft:#DDF2E7; --loss:#C2423A; --loss-soft:#F8E1DE;
+  --f-display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1317; --surface:#161E25; --sunk:#111820; --ink:#E6EBEF; --muted:#93A0AC; --line:#26313B;
+  --gold:#E3B24C; --gold-strong:#E3B24C; --gold-soft:#33290F;
+  --win:#43C58A; --win-soft:#133326; --loss:#F07A70; --loss-soft:#3A1A18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1317; --surface:#161E25; --sunk:#111820; --ink:#E6EBEF; --muted:#93A0AC; --line:#26313B;
+  --gold:#E3B24C; --gold-strong:#E3B24C; --gold-soft:#33290F;
+  --win:#43C58A; --win-soft:#133326; --loss:#F07A70; --loss-soft:#3A1A18; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto;padding-block:28px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(1.6rem,4vw,2.1rem);font-weight:700}
+h2{font-size:clamp(1.35rem,3.2vw,1.7rem);font-weight:600}
+h3{font-size:1rem;font-weight:600}
+p{margin:0;max-width:62ch}
+.muted{color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+header.top{display:flex;flex-direction:column;gap:6px;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+
+nav.trail{display:flex;gap:4px;overflow-x:auto;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:26px;scrollbar-width:none}
+nav.trail::-webkit-scrollbar{display:none}
+.tbtn{flex:1 0 auto;display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--muted);font:500 .86rem var(--f-body);padding:8px 10px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:background .2s,color .2s}
+.tbtn .n{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);font:600 .75rem var(--f-mono);transition:all .2s}
+.tbtn:hover{color:var(--ink)}
+.tbtn[aria-current="step"]{background:var(--gold-soft);color:var(--ink)}
+.tbtn[aria-current="step"] .n{background:var(--gold-strong);border-color:var(--gold-strong);color:#fff}
+.tbtn.seen .n{border-color:var(--gold-strong);color:var(--gold)}
+.tbtn:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--gold-strong);outline-offset:2px}
+@media (max-width:720px){.tbtn .lbl{display:none}.tbtn[aria-current="step"] .lbl{display:inline}}
+
+section.step{display:flex;flex-direction:column;gap:18px;animation:in .35s ease both}
+@keyframes in{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+.eyebrow{font:600 .72rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.lead{font-size:1.05rem;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2>*{min-width:0}
+@media (max-width:720px){.grid2{grid-template-columns:1fr}}
+
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:.78rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted)}
+.dot.w{background:var(--win)}.dot.l{background:var(--loss)}.dot.g{background:var(--gold-strong)}
+.field input[type=text]{width:100%;font:600 1.1rem var(--f-mono);color:var(--ink);background:var(--sunk);border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;transition:border-color .15s}
+.field input[type=text]:focus{border-color:var(--gold-strong);outline:none}
+.field input.bad{border-color:var(--loss)}
+.range{display:flex;flex-direction:column;gap:6px}
+.range .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.range .row b{font:600 1.05rem var(--f-mono)}
+input[type=range]{width:100%;accent-color:var(--gold-strong);height:24px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 13px;font:500 .85rem var(--f-body);cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--gold-strong)}
+.chip.on{background:var(--gold-soft);border-color:var(--gold-strong)}
+.chip small{color:var(--muted);font-weight:500}
+
+.btn{border:0;border-radius:10px;padding:10px 16px;font:600 .92rem var(--f-body);cursor:pointer;background:var(--ink);color:var(--bg);transition:transform .1s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+
+.calc{display:flex;flex-direction:column;gap:2px;font-family:var(--f-mono);font-size:.92rem;background:var(--sunk);border-radius:12px;padding:14px 16px;overflow-x:auto}
+.calc .ln{display:flex;gap:10px;align-items:baseline;white-space:nowrap;padding:3px 0}
+.calc .k{color:var(--muted);min-width:9.5em}
+.calc .eq{color:var(--muted)}
+.calc .r{font-weight:600}
+.calc .ln.total{border-top:1px dashed var(--line);margin-top:6px;padding-top:9px}
+.calc .hd{font:600 .7rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding-top:8px}
+.calc .hd:first-child{padding-top:0}
+.pos{color:var(--win)}.neg{color:var(--loss)}.gold{color:var(--gold)}
+.flash{animation:flash .5s ease}
+@keyframes flash{0%{background:var(--gold-soft)}100%{background:transparent}}
+
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big .v{font:700 clamp(1.9rem,6vw,2.6rem) var(--f-display);font-variant-numeric:tabular-nums;line-height:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 .8rem var(--f-body);padding:4px 10px;border-radius:999px}
+.pill.win{background:var(--win-soft);color:var(--win)}
+.pill.loss{background:var(--loss-soft);color:var(--loss)}
+.pill.even{background:var(--sunk);color:var(--muted)}
+
+.keep{display:flex;gap:12px;align-items:flex-start;background:var(--gold-soft);border-radius:12px;padding:14px 16px}
+.keep b{font-family:var(--f-display)}
+.keep svg{flex:none;margin-top:2px}
+.note{border:1.5px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:.94rem}
+.note.err{border-color:var(--loss)}
+.note.ok{border-color:var(--win)}
+.warn{color:var(--loss);font-size:.9rem;font-weight:500}
+
+svg text{font-family:var(--f-mono)}
+.chart{width:100%;height:auto;display:block}
+.scroll-x{overflow-x:auto}
+
+.result{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:30px}
+.tally{display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.tally b{color:var(--ink);font-family:var(--f-mono)}
+
+.bar{display:flex;height:34px;border-radius:9px;overflow:hidden;background:var(--loss-soft)}
+.bar .g{background:var(--win);transition:width .4s cubic-bezier(.2,.8,.2,1);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font:600 .8rem var(--f-mono);white-space:nowrap}
+.dots{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tok{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font:600 .78rem var(--f-mono);animation:pop .3s ease both}
+.tok.w{background:var(--win);color:#fff}
+.tok.l{background:var(--loss-soft);color:var(--loss);border:1.5px solid var(--loss)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+table.mini{border-collapse:collapse;font-family:var(--f-mono);font-size:.88rem;width:100%}
+table.mini td,table.mini th{padding:7px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.mini th{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+table.mini tr.hi td{background:var(--gold-soft)}
+
+/* monitor */
+.monitor{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:16px}
+
+/* saco de bolinhas */
+.bagwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bag{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:34px 18px 20px;border-radius:30px 30px 48px 48px;background:var(--sunk);border:2px solid var(--line);width:100%;max-width:340px}
+.bag::before{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:42%;height:22px;border:2px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;background:var(--sunk)}
+.ball{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:600 .66rem var(--f-mono);color:#fff;transition:transform .25s,box-shadow .25s;box-shadow:inset -4px -5px 0 rgba(0,0,0,.14)}
+.ball.g{background:var(--win)}.ball.r{background:var(--loss)}
+.ball.pick{transform:scale(1.22);box-shadow:0 0 0 4px var(--gold-strong),inset -4px -5px 0 rgba(0,0,0,.14)}
+.drawn{display:flex;flex-wrap:wrap;gap:5px;min-height:20px}
+.mb{width:18px;height:18px;border-radius:50%;animation:pop .25s ease both}
+.mb.g{background:var(--win)}.mb.r{background:var(--loss)}
+
+/* operações em sequência */
+.timeline{display:flex;flex-direction:column;gap:0}
+.op-row{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.op-row:last-child{border-bottom:0}
+.op-n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:600 .8rem var(--f-mono);background:var(--sunk);border:1.5px solid var(--line)}
+.op-d{font-size:.92rem;min-width:0}
+.op-v{text-align:right;font-family:var(--f-mono);font-size:.9rem}
+.op-v small{display:block;color:var(--muted)}
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:720px){.steps3{grid-template-columns:1fr}}
+
+/* regra */
+.rule{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:720px){.rule{grid-template-columns:1fr 1fr}}
+.rule div{background:var(--sunk);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.rule b{font:600 .95rem var(--f-mono)}
+.rule span{font-size:.78rem;color:var(--muted);font-weight:600}
+.today{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:var(--sunk);border-radius:12px;padding:14px 16px}
+.today .d{font:700 1.3rem var(--f-display);font-variant-numeric:tabular-nums}
+.today .t{flex:1 1 220px;min-width:0}
+.who{display:inline-flex;font:600 .74rem var(--f-body);padding:3px 9px;border-radius:999px;white-space:nowrap}
+.who.app{background:var(--gold-soft);color:var(--gold)}
+.who.cor{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+table.days tr.now td{background:var(--gold-soft)}
+table.days td.t{white-space:normal;min-width:220px}
+
+/* aprendeu ou decorou */
+.years{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.yr{padding:12px 4px;text-align:center;border-radius:9px;font:600 .8rem var(--f-mono);background:var(--sunk);color:var(--muted);border:1.5px solid var(--line);transition:all .3s}
+.yr.est{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.yr.pro{background:var(--gold-strong);color:#fff;border-color:var(--gold-strong)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.hrow{display:grid;grid-template-columns:70px 1fr 54px;gap:10px;align-items:center}
+.hrow>span:first-child{font-size:.85rem;font-weight:600;color:var(--muted)}
+.hrow>b{font:600 1rem var(--f-mono);text-align:right}
+.hbar{position:relative;height:28px;background:var(--sunk);border-radius:8px}
+.hbar .f{height:100%;border-radius:8px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.hbar .m{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--loss)}
+.mlabel{font-size:.75rem;color:var(--loss);font-weight:600}
+
+/* ao vivo */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:720px){.flow{grid-template-columns:1fr 1fr}}
+.flow div{background:var(--sunk);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.flow b{font-family:var(--f-display);font-size:.95rem}
+.flow span{font-size:.85rem;color:var(--muted)}
+.blk{display:grid;grid-template-columns:120px minmax(0,1fr) 120px 92px;gap:8px 14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.blk:last-child{border-bottom:0}
+.blk .lb{font-weight:600;font-size:.9rem}
+.blk .lb small{display:block;color:var(--muted);font-weight:500}
+.blk .nums{font:600 .9rem var(--f-mono);text-align:right}
+.blk .nums small{display:block;color:var(--muted);font-weight:400;font-size:.78rem}
+.blk .st{justify-self:end}
+@media (max-width:600px){.blk{grid-template-columns:1fr auto}.blk input{grid-column:1/-1;order:3}.blk .nums{text-align:left}}
+
+/* limites */
+.lights{display:flex;gap:10px;align-items:center}
+.light{width:40px;height:40px;border-radius:50%;background:var(--sunk);border:2px solid var(--line);transition:all .3s}
+.light.on.g{background:var(--win);border-color:var(--win);box-shadow:0 0 0 5px var(--win-soft)}
+.light.on.y{background:var(--gold-strong);border-color:var(--gold-strong);box-shadow:0 0 0 5px var(--gold-soft)}
+.light.on.r{background:var(--loss);border-color:var(--loss);box-shadow:0 0 0 5px var(--loss-soft)}
+.sem{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center}
+.sem .t{flex:1 1 240px;min-width:0}
+
+/* modelo */
+.chbar{position:relative;height:34px;background:var(--loss-soft);border-radius:9px;margin-top:22px}
+.chbar .f{height:100%;background:var(--win);border-radius:9px;transition:width .35s cubic-bezier(.2,.8,.2,1)}
+.chbar .mk{position:absolute;top:-6px;bottom:-6px;width:2px}
+.chbar .mk span{position:absolute;bottom:100%;transform:translateX(-50%);font:600 .72rem var(--f-mono);white-space:nowrap;padding-bottom:2px}
+
+/* vazamento */
+.clock{display:flex;flex-direction:column}
+.ck{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);transition:opacity .25s}
+.ck:last-child{border-bottom:0}
+.ck .h{font:600 .88rem var(--f-mono);color:var(--muted)}
+.ck.fut{opacity:.55}
+.ck.fut .n{text-decoration:line-through;text-decoration-color:var(--loss)}
+td.leak{background:var(--loss-soft);color:var(--loss);font-weight:600}
+th.leak{color:var(--loss)}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:600px){.grid4{grid-template-columns:1fr}}
+.grid4>div{background:var(--sunk);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px}
+
+/* montando o app */
+.pieces{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media (max-width:720px){.pieces{grid-template-columns:1fr 1fr}}
+.piece{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 10px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;color:var(--ink);font:inherit;transition:all .15s}
+.piece:hover{border-color:var(--gold-strong)}
+.piece.on{background:var(--gold-soft);border-color:var(--gold-strong)}
+.piece b{font:600 .95rem var(--f-display)}
+.piece span{font:600 .72rem var(--f-mono);color:var(--gold)}
+.pipe{display:flex;flex-direction:column;gap:6px}
+.stg{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);transition:all .3s}
+.stg .n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:600 .8rem var(--f-mono);background:var(--sunk);border:1.5px solid var(--line)}
+.stg b{font-family:var(--f-display)}
+.stg p{font-size:.92rem;color:var(--muted)}
+.stg.on{border-color:var(--gold-strong);background:var(--gold-soft)}
+.stg.on .n{background:var(--gold-strong);border-color:var(--gold-strong);color:#fff}
+.stg.skip{opacity:.45}
+.arrow{text-align:center;color:var(--muted);font-size:.9rem;line-height:1}
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:720px){.phases{grid-template-columns:1fr 1fr}}
+.phase{background:var(--sunk);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.phase b{font-family:var(--f-display)}
+.phase.first{background:var(--gold-soft)}
+
+/* corretora */
+.term{background:#10161C;color:#D5DEE6;border-radius:12px;font-family:var(--f-mono);font-size:.85rem;overflow:hidden;border:1px solid var(--line)}
+.term .bar-t{display:flex;gap:6px;align-items:center;padding:8px 12px;background:#1A232B;color:#8796A3;font-size:.75rem}
+.term .bar-t i{width:9px;height:9px;border-radius:50%;background:#3A4652;display:inline-block}
+.term .body{padding:12px 14px;display:flex;flex-direction:column;gap:4px;overflow-x:auto}
+.term .ln{display:flex;justify-content:space-between;gap:16px;white-space:nowrap}
+.term .ln span:first-child{color:#8796A3}
+.term .tag{color:#E3B24C}
+.term .buy{display:flex;gap:8px;margin-top:8px}
+.term .buy span{flex:1;text-align:center;padding:8px;border-radius:6px;font-weight:600}
+.term .buy .s{background:#5B2522;color:#FFB4AC}.term .buy .b{background:#163B2B;color:#8BE3B6}
+.term .pt{color:#8BE3B6}.term .nt{color:#FFB4AC}
+
+.sheet{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.card .f{font:600 1rem var(--f-mono);color:var(--gold)}
+
+.pager{display:flex;justify-content:space-between;gap:10px;margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="2" y="2" width="26" height="26" rx="8" fill="var(--gold-strong)"/><path d="M8 20 L13 14 L17 17 L22 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1>Laboratório do R</h1>
+    </div>
+    <p class="muted">Aprenda mexendo nos números. Mude os valores e veja as contas acontecerem.</p>
+  </header>
+
+  <nav class="trail" id="trail" aria-label="Passos da aula"></nav>
+
+  <main id="steps">
+
+  <!-- 1 STOP E ALVO -->
+  <section class="step" data-step="stop-alvo" data-label="Stop e alvo">
+    <div class="eyebrow">Passo 1 de 16</div>
+    <h2>Duas saídas combinadas antes de comprar</h2>
+    <p class="lead">Antes de entrar, você decide onde sai se der <span class="pos">certo</span> (alvo) e onde sai se der <span class="neg">errado</span> (stop). A primeira linha que o preço tocar decide o resultado.</p>
+    <div class="panel">
+      <div class="fields">
+        <div class="field"><label for="p1-target"><span class="dot w"></span>Alvo</label><input type="text" inputmode="decimal" id="p1-target" data-k="target"></div>
+        <div class="field"><label for="p1-entry"><span class="dot g"></span>Entrada (compra)</label><input type="text" inputmode="decimal" id="p1-entry" data-k="entry"></div>
+        <div class="field"><label for="p1-stop"><span class="dot l"></span>Stop</label><input type="text" inputmode="decimal" id="p1-stop" data-k="stop"></div>
+      </div>
+      <div class="warn" data-warn hidden>Na compra, o stop fica abaixo da entrada e o alvo fica acima.</div>
+      <div class="scroll-x"><svg id="chart1" class="chart" viewBox="0 0 640 300" role="img" aria-label="Gráfico do preço entre alvo e stop"></svg></div>
+      <div class="result" id="res1"></div>
+      <div class="btns">
+        <button class="btn" id="sim1">Simular uma operação</button>
+        <button class="btn ghost" id="sim100">Simular 100 de uma vez</button>
+      </div>
+      <div class="tally" id="tally1"></div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Quem fecha a operação?</b> A corretora. Você digita o stop e o alvo junto com a compra, e ela fecha sozinha quando o preço toca um dos dois.</p></div>
+  </section>
+
+  <!-- 2 O R -->
+  <section class="step" data-step="r" data-label="O R" hidden>
+    <div class="eyebrow">Passo 2 de 16</div>
+    <h2>Quanto você entra e quanto vale o R</h2>
+    <p class="lead">1R é a distância da entrada até o stop: o quanto você aceita perder. O alvo é medido com essa régua.</p>
+    <div class="panel">
+      <div>
+        <h3 style="margin-bottom:8px">Seus exemplos</h3>
+        <div class="chips" id="examples"></div>
+      </div>
+      <div class="note" id="exNote" hidden></div>
+      <div class="fields">
+        <div class="field"><label for="p2-entry"><span class="dot g"></span>Entrada</label><input type="text" inputmode="decimal" id="p2-entry" data-k="entry"></div>
+        <div class="field"><label for="p2-stop"><span class="dot l"></span>Stop</label><input type="text" inputmode="decimal" id="p2-stop" data-k="stop"></div>
+        <div class="field"><label for="p2-target"><span class="dot w"></span>Alvo</label><input type="text" inputmode="decimal" id="p2-target" data-k="target"></div>
+        <div class="field"><label for="p2-qty">Cotas</label><input type="text" inputmode="decimal" id="p2-qty" data-k="qty"></div>
+      </div>
+      <div class="warn" data-warn hidden>Na compra, o stop fica abaixo da entrada e o alvo fica acima. Cotas maior que zero.</div>
+      <div class="scroll-x"><svg id="ruler" class="chart" viewBox="0 0 640 140" role="img" aria-label="Régua de R entre stop e alvo"></svg></div>
+      <div class="calc" id="calc2"></div>
+      <div class="monitor">
+        <h3>Acompanhando a operação</h3>
+        <div class="range">
+          <div class="row"><label for="now2">Preço agora</label><b id="now2v"></b></div>
+          <input type="range" id="now2">
+        </div>
+        <div class="calc" id="mon2"></div>
+      </div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Não misture 1 cota com todas as cotas.</b> Ou divide distância de 1 cota por 1R de 1 cota, ou divide o total das cotas pelo 1R do total. O alvo em R dá o mesmo.</p></div>
+  </section>
+
+  <!-- 3 ACERTO MINIMO -->
+  <section class="step" data-step="acerto" data-label="Acerto mínimo" hidden>
+    <div class="eyebrow">Passo 3 de 16</div>
+    <h2>Quantas vezes preciso acertar para não perder?</h2>
+    <p class="lead">Um acerto paga vários erros. O acerto mínimo é o ponto em que os ganhos e as perdas se anulam.</p>
+    <div class="panel">
+      <div class="range">
+        <div class="row"><label for="r3">Alvo em R</label><b id="r3v"></b></div>
+        <input type="range" id="r3" min="0.5" max="5" step="0.01">
+      </div>
+      <div class="big"><span class="v gold" id="min3"></span><span class="muted">de acerto para empatar</span></div>
+      <div class="calc" id="calc3"></div>
+      <div>
+        <h3 style="margin-bottom:10px" id="grpTitle"></h3>
+        <div class="dots" id="dots3"></div>
+      </div>
+      <div class="bar"><div class="g" id="bar3"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="note err"><b>Seu erro no ouro a 2.430:</b> com alvo de 3R você fez 1 ÷ 3 = 33%. Faltou o "1 +": 1 acerto + 3 erros = 4 operações. Então 1 ÷ 4 = <b>25%</b>.<br><br><b>Na onça a 3.200 você acertou:</b> alvo 4R → 1 ÷ (1 + 4) = 1 ÷ 5 = <b>20%</b>.</div>
+      <div class="panel" style="padding:14px">
+        <table class="mini" id="tbl3"><thead><tr><th>Alvo</th><th>Acerto mínimo</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+    <div class="note" id="rw3" hidden></div>
+  </section>
+
+  <!-- 4 EXPECTATIVA: SACO DE BOLINHAS -->
+  <section class="step" data-step="expectativa" data-label="Expectativa" hidden>
+    <div class="eyebrow">Passo 4 de 16</div>
+    <h2>Expectativa com um saco de bolinhas</h2>
+    <p class="lead">O saco tem 10 bolinhas. Cada bolinha tirada é uma operação: <span class="pos">verde</span> bateu o alvo, <span class="neg">vermelha</span> bateu o stop. Você tira, anota e devolve.</p>
+    <div class="panel">
+      <p class="muted" id="opInfo"></p>
+      <div class="range">
+        <div class="row"><label for="v4">Bolinhas verdes no saco</label><b id="v4v"></b></div>
+        <input type="range" id="v4" min="0" max="10" step="1">
+      </div>
+      <div class="grid2">
+        <div class="bagwrap"><div class="bag" id="bag" aria-label="Saco com 10 bolinhas"></div></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="btns">
+            <button class="btn" id="draw1">Tirar 1 bolinha</button>
+            <button class="btn ghost" id="draw20">Tirar 20</button>
+            <button class="btn ghost" id="draw0">Recomeçar</button>
+          </div>
+          <div>
+            <span class="muted" style="font-size:.85rem">Quanto tenho até agora</span>
+            <div class="big"><span class="v" id="tot4">0</span></div>
+            <span class="muted" id="cnt4" style="font-size:.9rem"></span>
+          </div>
+          <div class="drawn" id="drawn4"></div>
+        </div>
+      </div>
+      <div class="scroll-x"><svg id="chart4" class="chart" viewBox="0 0 640 190" role="img" aria-label="Quanto tenho até agora, jogada por jogada"></svg></div>
+    </div>
+
+    <div class="panel">
+      <h3>O atalho: a conta sem precisar jogar</h3>
+      <div class="calc" id="calc4"></div>
+      <div class="big"><span class="v" id="exp4"></span><span id="pill4"></span></div>
+    </div>
+
+    <div class="panel">
+      <h3>Mudando as bolinhas do saco</h3>
+      <p class="muted" style="font-size:.92rem">O saco sempre tem 10. Vermelhas = 10 − verdes.</p>
+      <div class="scroll-x"><table class="mini" id="tbl4"></table></div>
+    </div>
+
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Nenhuma bolinha dá a expectativa.</b> Cada uma dá o valor do alvo ou do stop. A expectativa aparece quando você junta muitas. No começo pode parecer que está dando errado.</p></div>
+    <div class="note"><b>A parte difícil:</b> no mercado você não vê dentro do saco. Para descobrir quantas são verdes, olha o passado: quantas vezes essa entrada bateu o alvo e quantas bateu o stop. É isso que o app faz.</div>
+  </section>
+
+  <!-- 5 AS OPERAÇÕES -->
+  <section class="step" data-step="operacoes" data-label="As operações" hidden>
+    <div class="eyebrow">Passo 5 de 16</div>
+    <h2>As operações acontecem uma depois da outra</h2>
+    <p class="lead">Não são simultâneas. Cada uma em um dia e um preço. O ganho ou a perda fica na conta, e você entra de novo com as mesmas 10 cotas.</p>
+    <div class="panel">
+      <div class="timeline">
+        <div class="op-row"><span class="op-n">1</span><span class="op-d">Compra 10 cotas a 3.200 <span class="muted">(32.000)</span><br><span class="pill win">bateu o alvo</span></span><span class="op-v pos">+800<small>conta 32.800</small></span></div>
+        <div class="op-row"><span class="op-n">2</span><span class="op-d">Outro dia, compra 10 cotas a 3.250 <span class="muted">(32.500)</span><br><span class="pill loss">bateu o stop</span></span><span class="op-v neg">−200<small>conta 32.600</small></span></div>
+        <div class="op-row"><span class="op-n">3</span><span class="op-d">Outro dia, compra 10 cotas a 3.190 <span class="muted">(31.900)</span><br><span class="pill win">bateu o alvo</span></span><span class="op-v pos">+800<small>conta 33.400</small></span></div>
+        <div class="op-row"><span class="op-n">4</span><span class="op-d">Outro dia, compra 10 cotas a 3.230 <span class="muted">(32.300)</span><br><span class="pill loss">bateu o stop</span></span><span class="op-v neg">−200<small>conta 33.200</small></span></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Quantas operações?</h3>
+        <p class="muted">Ninguém escolhe. É quantas vezes a sua situação de entrada aconteceu. Se no último ano ela apareceu 150 vezes, são 150 operações. Quanto mais, mais confiável. Com 10, a sorte pesa muito.</p>
+      </div>
+      <div class="panel">
+        <h3>Manual ou automático?</h3>
+        <p class="muted">Os dois. Manual: você vê a situação e clica em comprar. Programado: um robô no MT5 compra sozinho. Fechar no stop ou no alvo é sempre automático, pela corretora.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>O que o app faz</h3>
+      <div class="steps3">
+        <div><div class="eyebrow">1 · Olha o passado</div><p class="muted">Acha todas as vezes em que a entrada aconteceu e confere se bateu o alvo ou o stop.</p></div>
+        <div><div class="eyebrow">2 · Conta</div><p class="muted">Quantas verdes e vermelhas tem no saco: acerto, acerto mínimo e expectativa.</p></div>
+        <div><div class="eyebrow">3 · Olha o presente</div><p class="muted">Quando a situação aparece de novo, avisa você, ou já compra, se for programado.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 A REGRA -->
+  <section class="step" data-step="regra" data-label="A regra" hidden>
+    <div class="eyebrow">Passo 6 de 16</div>
+    <h2>Uma regra testada no passado, dia a dia</h2>
+    <p class="lead">A regra diz quando comprar. O app percorre o histórico, vê onde ela mandaria comprar e confere se cada compra bateu o alvo ou o stop.</p>
+    <div class="panel">
+      <h3>A regra</h3>
+      <div class="rule">
+        <div><span>Quando comprar</span><b>3 dias seguidos de queda</b></div>
+        <div><span><span class="dot l"></span> Stop</span><b>entrada − 20</b></div>
+        <div><span><span class="dot w"></span> Alvo</span><b>entrada + 80</b></div>
+        <div><span>Operações</span><b>uma por vez, 10 cotas</b></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="scroll-x"><svg id="chart6r" class="chart" viewBox="0 0 640 270" role="img" aria-label="Preço da onça em 18 dias com as compras da regra"></svg></div>
+      <div class="today" id="today6"></div>
+      <div class="btns">
+        <button class="btn" id="dayNext">Próximo dia</button>
+        <button class="btn ghost" id="dayAll">Ver os 18 dias</button>
+        <button class="btn ghost" id="day0">Recomeçar</button>
+      </div>
+      <div class="scroll-x"><table class="mini days" id="days6"></table></div>
+    </div>
+    <div class="panel">
+      <h3>Contando as bolinhas</h3>
+      <div class="calc" id="calc6r"></div>
+      <div class="big"><span class="v" id="exp6r"></span><span id="pill6r"></span></div>
+    </div>
+    <div class="grid2">
+      <div class="note"><b>Quem vigia?</b> Nos dias de operação aberta, a <b>corretora</b> vigia o stop e o alvo. Nos dias sem operação, o <b>app</b> conta as quedas esperando a 3ª.</div>
+      <div class="note"><b>Separadas ou acumuladas?</b> Separadas: cada compra é uma operação nova de 10 cotas. O resultado de todas vai para a <b>mesma conta</b>.</div>
+    </div>
+    <div class="note"><b>Bateu no alvo ou no stop, a operação para.</b> A corretora vende as 10 cotas, o resultado vai para a conta e o app volta a contar as quedas do zero.</div>
+    <div class="panel">
+      <h3>Pouca operação engana</h3>
+      <p class="muted">3 operações é como tirar 3 bolinhas e achar que sabe o que tem no saco. Por isso o app roda a mesma regra em anos de histórico.</p>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Histórico</th><th>Compras</th><th>Alvo</th><th>Stop</th><th>Acerto</th><th>Expectativa</th></tr></thead>
+        <tbody>
+          <tr><td>18 dias</td><td>3</td><td class="pos">1</td><td class="neg">2</td><td>33%</td><td>+133 <span class="muted">(pouco confiável)</span></td></tr>
+          <tr class="hi"><td>5 anos <span class="muted">(exemplo)</span></td><td>150</td><td class="pos">45</td><td class="neg">105</td><td>30%</td><td>+100 <span class="muted">(confiável)</span></td></tr>
+        </tbody></table></div>
+      <div class="calc"><div class="ln"><span class="k">5 anos</span><span>45 × 800 − 105 × 200</span><span class="eq">=</span><span>36.000 − 21.000</span><span class="eq">=</span><span class="r pos">+15.000</span><span class="eq">÷ 150 =</span><span class="r pos">+100</span></div></div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Decidir:</b> acerto acima do mínimo (20%), com muitas operações, a regra serve e o app passa a vigiar o preço ao vivo. Acerto abaixo ou perto do mínimo, descarta e testa outra regra.</p></div>
+  </section>
+
+  <!-- 7 APRENDEU OU DECOROU -->
+  <section class="step" data-step="prova" data-label="Aprendeu ou decorou" hidden>
+    <div class="eyebrow">Passo 7 de 16</div>
+    <h2>A regra aprendeu ou só decorou?</h2>
+    <p class="lead">Testando muitas regras no mesmo passado, alguma vai parecer ótima só por sorte. Para saber se é de verdade, a regra faz uma prova num período que nunca viu.</p>
+    <div class="panel">
+      <h3>Duas regras no mesmo passado</h3>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Regra</th><th>Acerto no passado</th></tr></thead>
+        <tbody>
+          <tr><td>A: comprar depois de 3 quedas</td><td>30%</td></tr>
+          <tr><td>B: 3 quedas + só às terças + onça entre 3.150 e 3.210</td><td>60%</td></tr>
+        </tbody></table></div>
+      <p class="muted">A regra B parece muito melhor. Mas tem tantas condições que só serve para aqueles dias. Ela pode ter decorado.</p>
+    </div>
+    <div class="panel">
+      <h3>Estudo e prova</h3>
+      <div class="chips" id="wfRule"></div>
+      <div class="chips" id="wfRound"></div>
+      <div class="years" id="wfYears"></div>
+      <div class="legend"><span><i style="background:var(--ink)"></i>estudo: o app escolhe a regra aqui</span><span><i style="background:var(--gold-strong)"></i>prova: o app nunca viu</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="hrow"><span>Estudo</span><div class="hbar"><div class="f" id="wfBarE" style="background:var(--ink)"></div><div class="m" style="left:calc(20% / .7)"></div></div><b id="wfValE"></b></div>
+        <div class="hrow"><span>Prova</span><div class="hbar"><div class="f" id="wfBarP" style="background:var(--gold-strong)"></div><div class="m" style="left:calc(20% / .7)"></div></div><b id="wfValP"></b></div>
+        <div class="hrow"><span></span><span class="mlabel" style="padding-left:calc(20% / .7 - 30px)">mínimo 20%</span><span></span></div>
+      </div>
+      <div class="result" id="wfVerdict"></div>
+    </div>
+    <div class="panel">
+      <h3>Avançando no tempo e repetindo</h3>
+      <p class="muted">Uma prova só ainda pode ser sorte. O app avança no tempo e faz a prova de novo.</p>
+      <div class="scroll-x"><table class="mini" id="wfTable"></table></div>
+      <div class="result" id="wfFinal"></div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>É o aluno que decora o gabarito.</b> Tira 10 na prova antiga e vai mal na nova. A regra só vai para o ao vivo se passar em todas as provas. Esse é o Walk Forward do post do Robert Pardo.</p></div>
+    <div class="note"><b>O que o app faz até aqui:</b> 1) testa regras no passado; 2) separa estudo e prova, avançando no tempo; 3) só a regra que passa nas provas vai para o ao vivo. <span class="muted">Os números deste passo são exemplos.</span></div>
+  </section>
+
+  <!-- 8 AO VIVO -->
+  <section class="step" data-step="ao-vivo" data-label="Ao vivo" hidden>
+    <div class="eyebrow">Passo 8 de 16</div>
+    <h2>Ao vivo: vigiando se a regra continua funcionando</h2>
+    <p class="lead">A regra passou nas provas e vai para o mercado de verdade. Mas o saco pode mudar com o tempo: o mercado de hoje não é igual ao de 5 anos atrás.</p>
+    <div class="flow">
+      <div><b>1 · Conta demo</b><span>Dinheiro de mentira, preços reais. Vê se a regra se comporta como nas provas.</span></div>
+      <div><b>2 · Operar</b><span>No 3º dia de queda o app avisa ou compra. A corretora fecha no stop ou no alvo.</span></div>
+      <div><b>3 · Conferir</b><span>A cada 20 operações, compara o acerto real com o das provas e com o mínimo.</span></div>
+      <div><b>4 · Se cair</b><span>Pausa a regra e refaz estudo e prova com os anos mais recentes.</span></div>
+    </div>
+    <div class="panel">
+      <h3>Conferindo a cada 20 operações</h3>
+      <p class="muted" style="font-size:.92rem">Arraste para mudar quantas bateram o alvo em cada bloco. Alvo +800 · stop −200 · acerto nas provas ≈ 28% · mínimo 20%.</p>
+      <div id="blocks"></div>
+      <div class="scroll-x"><svg id="chartLive" class="chart" viewBox="0 0 640 210" role="img" aria-label="Acerto de cada bloco comparado ao acerto das provas e ao mínimo"></svg></div>
+      <div class="note" id="liveAction"></div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Retreinar</b> é refazer o estudo e a prova com os dados novos. Se a regra passar de novo, volta a operar. Se não passar, é descartada e o app procura outra.</p></div>
+    <div class="note"><b>O que o app faz até aqui:</b> 1) testa regras no passado; 2) separa estudo e prova, avançando no tempo; 3) opera ao vivo, primeiro na conta demo; 4) confere o acerto de tempos em tempos e, se cair, pausa e refaz a prova.</div>
+  </section>
+
+  <!-- 9 LIMITES E OVERFITTING -->
+  <section class="step" data-step="limites" data-label="Limites e overfitting" hidden>
+    <div class="eyebrow">Passo 9 de 16</div>
+    <h2>Limites, avisos e overfitting</h2>
+    <p class="lead">Três dúvidas: quando pausar a regra, se dá para testar regras sem limite no mesmo histórico, e como medir se a regra decorou.</p>
+
+    <div class="panel">
+      <h3>1 · Um bloco ruim pode ser só azar</h3>
+      <p class="muted">Uma regra boa, que acerta 28%, varia bastante num bloco de 20 operações. Cada barra mostra quantos blocos deram aquele número de alvos.</p>
+      <div class="scroll-x"><svg id="chartLuck" class="chart" viewBox="0 0 640 200" role="img" aria-label="Quantos alvos uma regra de 28% dá em blocos de 20 operações"></svg></div>
+      <div class="result" id="luckTxt"></div>
+      <div class="btns">
+        <button class="btn" id="luck1">Simular 1 bloco</button>
+        <button class="btn ghost" id="luck200">Simular 200 blocos</button>
+        <button class="btn ghost" id="luck0">Zerar</button>
+      </div>
+      <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        <p><b>Um bloco ruim sozinho não prova nada.</b> Por isso o limite olha para as últimas 100 operações. Com 100, uma regra boa só fica abaixo de 20% por azar em ≈ 5% das vezes.</p></div>
+    </div>
+
+    <div class="panel">
+      <h3>O semáforo: limites definidos antes do ao vivo</h3>
+      <p class="muted" style="font-size:.92rem">Calculados a partir das provas: acerto ≈ 28%, mínimo 20%, pior sequência de stops nas provas = 12. Os números são exemplos; cada regra tem os seus.</p>
+      <div class="grid2">
+        <div class="range"><div class="row"><label for="sem100">Acerto das últimas 100 operações</label><b id="sem100v"></b></div><input type="range" id="sem100" min="10" max="40" step="1" value="26"></div>
+        <div class="range"><div class="row"><label for="semBlk">Alvos no último bloco de 20</label><b id="semBlkv"></b></div><input type="range" id="semBlk" min="0" max="20" step="1" value="6"></div>
+        <div class="range"><div class="row"><label for="semSeq">Maior sequência de stops ao vivo</label><b id="semSeqv"></b></div><input type="range" id="semSeq" min="0" max="25" step="1" value="7"></div>
+      </div>
+      <div class="sem">
+        <div class="lights"><span class="light g" id="lg"></span><span class="light y" id="ly"></span><span class="light r" id="lr"></span></div>
+        <div class="t" id="semTxt"></div>
+      </div>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Sinal</th><th>Quando</th><th>O que o app faz</th></tr></thead>
+        <tbody>
+          <tr><td>🟢 Normal</td><td>últimas 100 acima de 24%</td><td>continua operando</td></tr>
+          <tr><td>🟡 Atenção</td><td>últimas 100 entre 20% e 24%, ou um bloco de 20 abaixo de 20%</td><td>avisa você e continua</td></tr>
+          <tr><td>🔴 Pausa</td><td>últimas 100 abaixo de 20%, ou sequência de stops maior que 12</td><td>para, avisa e refaz estudo e prova</td></tr>
+        </tbody></table></div>
+      <p class="muted" style="font-size:.92rem">Além disso, o app refaz estudo e prova de rotina (exemplo: a cada 6 meses), mesmo com tudo verde.</p>
+    </div>
+
+    <div class="panel">
+      <h3>2 · O histórico tem limite de regras</h3>
+      <p class="muted">Cada regra nova testada no mesmo histórico é mais uma chance de achar uma que deu certo por sorte. Abaixo, regras que <b>não servem para nada</b> (acerto real de 20%, o empate), cada uma testada em 150 operações. Veja quanto a melhor delas parece acertar.</p>
+      <div class="chips" id="manyChips"></div>
+      <div class="big"><span class="v" id="manyBest"></span><span class="muted" id="manyTxt"></span></div>
+      <div class="btns"><button class="btn ghost" id="manyAgain">Sortear de novo</button></div>
+      <div class="years"><div class="yr est">ano 1</div><div class="yr est">ano 2</div><div class="yr est">ano 3</div><div class="yr pro">ano 4</div><div class="yr" style="border-style:dashed">ano 5 · cofre</div></div>
+      <div class="note"><b>Como o app se protege:</b> 1) guarda um pedaço do histórico que nunca é usado (o cofre); só a regra final faz essa prova, uma vez. 2) conta quantas regras testou; quanto mais testou, mais exigente precisa ser. 3) o ao vivo é a prova mais honesta, porque são dias que ainda não existiam.</div>
+      <p class="muted"><b>As regras se repetem?</b> O passado não se repete igual. As que costumam continuar funcionando são simples e têm um motivo (exemplo: depois de quedas fortes, compradores voltam). Mesmo assim podem parar quando o mercado muda, e por isso existe o semáforo.</p>
+    </div>
+
+    <div class="panel">
+      <h3>3 · Overfitting: como medir</h3>
+      <p class="muted">Overfitting é o "decorou". Quatro testes:</p>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Teste</th><th>Aprendeu (A)</th><th>Decorou (B)</th></tr></thead>
+        <tbody>
+          <tr><td>Estudo × prova: quanto o acerto cai</td><td class="pos">30% → 28%</td><td class="neg">60% → 15%</td></tr>
+          <tr><td>Mexer um pouco: 3 → 4 quedas, stop 20 → 22</td><td class="pos">continua parecido</td><td class="neg">desmorona</td></tr>
+          <tr><td>Número de operações</td><td class="pos">150</td><td class="neg">12</td></tr>
+          <tr><td>Todas as rodadas</td><td class="pos">passa em todas</td><td class="neg">passa em uma</td></tr>
+        </tbody></table></div>
+      <p class="muted">Reprovou em qualquer um, é sinal de overfitting. <b>Para monitorar:</b> é o semáforo. Se o acerto ao vivo cai bem abaixo do das provas, a regra pode ter decorado.</p>
+    </div>
+  </section>
+
+  <!-- 10 O MODELO -->
+  <section class="step" data-step="modelo" data-label="O modelo" hidden>
+    <div class="eyebrow">Passo 10 de 16</div>
+    <h2>O computador aprende sozinho quando comprar</h2>
+    <p class="lead">Até aqui, você inventava a regra e o app testava. Agora o computador procura sozinho quais momentos têm mais bolinhas verdes, olhando vários números ao mesmo tempo. É aqui que entra o machine learning.</p>
+
+    <div class="panel">
+      <h3>1 · Cada momento vira uma ficha de números</h3>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Dia</th><th>Quedas seguidas</th><th>Quanto caiu na semana</th><th>Ontem</th><th>Resultado</th></tr></thead>
+        <tbody>
+          <tr><td>4</td><td>3</td><td>−40</td><td>caiu</td><td class="pos">🟢 alvo</td></tr>
+          <tr><td>10</td><td>3</td><td>−25</td><td>caiu</td><td class="neg">🔴 stop</td></tr>
+          <tr><td>15</td><td>3</td><td>−20</td><td>caiu</td><td class="neg">🔴 stop</td></tr>
+          <tr><td>22</td><td>1</td><td>+10</td><td>subiu</td><td class="neg">🔴 stop</td></tr>
+          <tr><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+        </tbody></table></div>
+      <p class="muted">Milhares de fichas, uma por momento do histórico.</p>
+    </div>
+
+    <div class="panel">
+      <h3>2 · O modelo estuda as fichas</h3>
+      <p class="muted">Olhando as fichas do <b>estudo</b>, ele descobre sozinho quais combinações costumam terminar em alvo. Exemplo: "3 quedas <b>e</b> queda grande na semana → mais verdes".</p>
+    </div>
+
+    <div class="panel">
+      <h3>3 e 4 · Ele dá uma chance, e o app compra só com folga</h3>
+      <p class="muted">Para um momento novo, o modelo diz a chance de bater o alvo: quantas verdes tem no saco <b>deste momento</b>. Alvo +800, stop −200, mínimo 20%.</p>
+      <div class="grid2">
+        <div class="range"><div class="row"><label for="mdP">Chance que o modelo deu</label><b id="mdPv"></b></div><input type="range" id="mdP" min="0" max="60" step="1"></div>
+        <div class="range"><div class="row"><label for="mdL">Limite de compra</label><b id="mdLv"></b></div><input type="range" id="mdL" min="20" max="40" step="1"></div>
+      </div>
+      <div class="chbar"><div class="f" id="mdBar"></div>
+        <div class="mk" id="mkMin" style="background:var(--loss)"><span style="color:var(--loss)">mínimo 20%</span></div>
+        <div class="mk" id="mkLim" style="background:var(--gold-strong)"><span class="gold" id="mkLimT"></span></div>
+      </div>
+      <div class="calc" id="mdCalc"></div>
+      <div class="result" id="mdDec"></div>
+      <div class="scroll-x"><table class="mini" id="mdTbl"></table></div>
+      <p class="muted" style="font-size:.92rem">O limite fica acima dos 20% porque a chance do modelo também pode errar um pouco.</p>
+    </div>
+
+    <div class="panel">
+      <h3>5 · A chance é honesta?</h3>
+      <p class="muted">Quando o modelo diz "30%", precisa acontecer cerca de 30% de verdade. O app junta os momentos de cada chance e conta quantos bateram o alvo. Pontos na linha tracejada: honesto.</p>
+      <div class="grid2">
+        <div class="scroll-x"><svg id="calibChart" class="chart" viewBox="0 0 320 260" role="img" aria-label="Chance que o modelo disse contra o que aconteceu"></svg></div>
+        <div class="scroll-x"><table class="mini">
+          <thead><tr><th>Disse</th><th>Momentos</th><th>Alvo</th><th>Aconteceu</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>≈ 20%</td><td>200</td><td>42</td><td>21%</td><td class="pos">✅ honesto</td></tr>
+            <tr><td>≈ 30%</td><td>150</td><td>44</td><td>29%</td><td class="pos">✅ honesto</td></tr>
+            <tr><td>≈ 40%</td><td>80</td><td>18</td><td>22%</td><td class="neg">❌ exagerou</td></tr>
+          </tbody></table></div>
+      </div>
+      <p class="muted">Se o modelo exagera, as compras dele valem menos do que parecem, e ele precisa ser corrigido.</p>
+    </div>
+
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>O resto continua igual.</b> O modelo passa pelos mesmos cuidados da regra feita à mão: estudo e prova avançando no tempo, cofre, conta demo, semáforo no ao vivo e testes de overfitting.</p></div>
+  </section>
+
+  <!-- 11 VAZAMENTO DO FUTURO -->
+  <section class="step" data-step="vazamento" data-label="Vazamento do futuro" hidden>
+    <div class="eyebrow">Passo 11 de 16</div>
+    <h2>Não deixar o futuro vazar para a ficha</h2>
+    <p class="lead">Na ficha do momento só pode entrar o que já se sabia naquele momento. Se entrar algo de depois, o modelo "cola" na prova: acerta muito no histórico e erra tudo ao vivo. E nada dá erro na tela, o resultado só parece ótimo.</p>
+
+    <div class="panel">
+      <h3>A regra do relógio</h3>
+      <p class="muted">Arraste a hora da compra. Só entra na ficha o que ficou conhecido <b>antes</b> dela.</p>
+      <div class="range"><div class="row"><label for="ckH">Hora da compra (hoje)</label><b id="ckHv"></b></div><input type="range" id="ckH" min="9" max="18" step="1" value="10"></div>
+      <div class="clock" id="clock"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Exemplo com os 18 dias</h3>
+      <p class="muted">Imagine que, sem querer, entrou na ficha o preço do dia seguinte:</p>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Dia</th><th>Quedas seguidas</th><th class="leak">Preço de amanhã</th><th>Resultado</th></tr></thead>
+        <tbody>
+          <tr><td>4</td><td>3</td><td class="leak">3.185 (subiu)</td><td class="pos">🟢 alvo</td></tr>
+          <tr><td>10</td><td>3</td><td class="leak">3.195 (caiu)</td><td class="neg">🔴 stop</td></tr>
+          <tr><td>15</td><td>3</td><td class="leak">3.165 (subiu)</td><td class="neg">🔴 stop</td></tr>
+        </tbody></table></div>
+      <p class="muted">O modelo aprende "se amanhã sobe, compra". Ao vivo, o preço de amanhã ainda não existe.</p>
+      <div class="chips" id="leakChips"></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="hrow"><span>Estudo</span><div class="hbar"><div class="f" id="lkE" style="background:var(--ink)"></div><div class="m" style="left:calc(20% / .8)"></div></div><b id="lkEv"></b></div>
+        <div class="hrow"><span>Ao vivo</span><div class="hbar"><div class="f" id="lkL" style="background:var(--gold-strong)"></div><div class="m" style="left:calc(20% / .8)"></div></div><b id="lkLv"></b></div>
+      </div>
+      <div class="result" id="leakTxt"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Onde o futuro costuma vazar sem ninguém perceber</h3>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Erro</th><th>Exemplo</th><th>Certo</th></tr></thead>
+        <tbody>
+          <tr><td>Fechamento do dia para comprar de manhã</td><td class="neg">compra às 10h usando o fechamento das 18h</td><td class="pos">usar só o preço até as 10h</td></tr>
+          <tr><td>Conta que inclui dias de depois</td><td class="neg">"quanto caiu na semana" de segunda a sexta, para comprar na quarta</td><td class="pos">contar só até a quarta</td></tr>
+          <tr><td>Misturar estudo e prova</td><td class="neg">dias de prova no meio dos dias de estudo</td><td class="pos">prova sempre depois do estudo, no tempo</td></tr>
+        </tbody></table></div>
+    </div>
+
+    <div class="panel">
+      <h3>Como o app se protege</h3>
+      <div class="grid4">
+        <div><b>1 · Regra do relógio</b><span class="muted">Cada número da ficha tem a hora em que ficou conhecido. Só entra se for antes da compra.</span></div>
+        <div><b>2 · Bom demais, desconfie</b><span class="muted">Acerto muito alto (ex.: 70% com alvo de 4R) é sinal de vazamento, não de regra genial.</span></div>
+        <div><b>3 · Teste de atrasar</b><span class="muted">Atrasa todos os números da ficha em 1 dia e refaz o teste. Se desabar, o futuro estava vazando.</span></div>
+        <div><b>4 · Conta demo</b><span class="muted">Se o acerto na demo cair muito em relação ao estudo, investigar vazamento antes de tudo.</span></div>
+      </div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>É o aluno com o gabarito no bolso.</b> Nota alta na prova, mas não sabe nada. Vazamento do futuro é o erro que mais engana, porque o resultado parece ótimo.</p></div>
+  </section>
+
+  <!-- 12 QUANTO ARRISCAR -->
+  <section class="step" data-step="risco" data-label="Quanto arriscar" hidden>
+    <div class="eyebrow">Passo 12 de 16</div>
+    <h2>Quanto arriscar em cada operação</h2>
+    <p class="lead">Quantas cotas comprar é uma decisão que o app toma sozinho. Ela decide se a conta sobrevive às fases ruins.</p>
+
+    <div class="panel">
+      <h3>Sequências de stops acontecem</h3>
+      <p class="muted">Nas provas, a pior sequência foi de 12 stops seguidos. Com uma regra boa isso acontece, é só azar. Mude quanto arriscar e veja a conta.</p>
+      <div class="grid2">
+        <div class="range"><div class="row"><label for="rkP">Arrisca por operação</label><b id="rkPv"></b></div><input type="range" id="rkP" min="0.5" max="10" step="0.5" value="1"></div>
+        <div class="range"><div class="row"><label for="rkN">Stops seguidos</label><b id="rkNv"></b></div><input type="range" id="rkN" min="1" max="20" step="1" value="12"></div>
+      </div>
+      <div class="scroll-x"><svg id="rkChart" class="chart" viewBox="0 0 640 210" role="img" aria-label="Conta depois de cada stop seguido"></svg></div>
+      <div class="calc" id="rkCalc"></div>
+      <div class="scroll-x"><table class="mini" id="rkTbl"></table></div>
+    </div>
+
+    <div class="panel">
+      <h3>A regra: porcentagem pequena e fixa da conta</h3>
+      <div class="fields">
+        <div class="field"><label for="cqC">Conta</label><input type="text" inputmode="decimal" id="cqC"></div>
+        <div class="field"><label for="cqP">Arriscar (%)</label><input type="text" inputmode="decimal" id="cqP"></div>
+        <div class="field"><label for="cqE"><span class="dot g"></span>Entrada</label><input type="text" inputmode="decimal" id="cqE"></div>
+        <div class="field"><label for="cqS"><span class="dot l"></span>Stop</label><input type="text" inputmode="decimal" id="cqS"></div>
+      </div>
+      <div class="calc" id="cqCalc"></div>
+      <div class="chips"><button class="chip" id="cq20">Stop 3.180 (perto)</button><button class="chip" id="cq40">Stop 3.160 (longe)</button></div>
+      <p class="muted" style="font-size:.92rem">Com o stop mais longe, o app compra <b>menos cotas</b>. A perda se bater o stop fica sempre igual.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="note"><b>Por que porcentagem e não valor fixo?</b> A conta caiu para 28.000: arrisca menos e compra menos, protegendo nas fases ruins. Subiu para 40.000: arrisca mais e aproveita as fases boas.</div>
+      <div class="note"><b>O que o app faz:</b> 1) calcula as cotas antes de cada compra; 2) usa uma porcentagem pequena (ex.: 0,5% a 1%); 3) se a conta cair 15% desde o maior valor, pausa tudo, junto com o semáforo.</div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Para recuperar, precisa ganhar mais do que perdeu.</b> Quem perdeu 50% precisa ganhar 100% para voltar ao início.</p></div>
+  </section>
+
+  <!-- 13 OS DADOS -->
+  <section class="step" data-step="dados" data-label="Os dados" hidden>
+    <div class="eyebrow">Passo 13 de 16</div>
+    <h2>Os dados: de onde vêm os preços e como ler cada um</h2>
+    <p class="lead">Tudo o que o app faz depende do histórico de preços. Nos 18 dias usamos um preço por dia, para simplificar. Na vida real o preço sobe e desce o dia inteiro, e isso muda o resultado.</p>
+    <div class="note"><b>De onde vem:</b> o MT5 da corretora guarda anos de preços do ouro (XAUUSD) e permite exportar. O app baixa esse histórico e trabalha em cima dele.</div>
+
+    <div class="panel">
+      <h3>O candle: cada período vira 4 números</h3>
+      <p class="muted">Compra a 3.160, stop 3.140, alvo 3.240. Mude os números do candle do dia seguinte.</p>
+      <div class="fields">
+        <div class="field"><label for="cdO">Abertura</label><input type="text" inputmode="decimal" id="cdO"></div>
+        <div class="field"><label for="cdH">Máxima</label><input type="text" inputmode="decimal" id="cdH"></div>
+        <div class="field"><label for="cdL">Mínima</label><input type="text" inputmode="decimal" id="cdL"></div>
+        <div class="field"><label for="cdC">Fechamento</label><input type="text" inputmode="decimal" id="cdC"></div>
+      </div>
+      <div class="scroll-x"><svg id="cdChart" class="chart" viewBox="0 0 640 260" role="img" aria-label="Candle do dia com as linhas de stop e alvo"></svg></div>
+      <div class="result" id="cdTxt"></div>
+      <div class="btns" id="cdBtns"><button class="btn" id="cdHour">Abrir os candles de 1 hora</button><button class="btn ghost" id="cdReset">Voltar ao exemplo</button></div>
+      <div id="cdHourWrap" hidden>
+        <div class="scroll-x"><svg id="cdHourChart" class="chart" viewBox="0 0 640 240" role="img" aria-label="Candles de 1 hora do mesmo dia"></svg></div>
+        <div class="result"><span class="pill loss">stop primeiro</span><span>Na hora 2 a mínima passou de 3.140. O alvo só foi tocado na hora 6, quando a operação já tinha fechado: <b class="neg">−200</b>.</span></div>
+      </div>
+      <p class="muted" style="font-size:.92rem">Se nem os candles menores mostrarem a ordem, o app <b>conta como stop</b>. É melhor errar para o lado pessimista.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Descontar os custos no histórico</h3>
+      <p class="muted">Ao vivo, toda operação paga spread. No histórico ninguém cobra. Se o app não descontar, o teste fica mais bonito que a realidade. 10 cotas por operação.</p>
+      <div class="chips" id="spChips"></div>
+      <div class="range"><div class="row"><label for="spV">Spread por onça</label><b id="spVv"></b></div><input type="range" id="spV" min="0" max="1" step="0.05" value="0.3"></div>
+      <div class="calc" id="spCalc"></div>
+      <div class="result" id="spTxt"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Conferir a qualidade dos dados</h3>
+      <div class="scroll-x"><table class="mini">
+        <thead><tr><th>Problema</th><th>Exemplo</th><th>O que o app faz</th></tr></thead>
+        <tbody>
+          <tr><td>Buracos</td><td>dias ou horas sem preço</td><td>marca e não opera ali</td></tr>
+          <tr><td>Preço errado</td><td>pico de 3.200 para 5.000 em 1 minuto</td><td>descarta</td></tr>
+          <tr><td>Horário sem mercado</td><td>fim de semana, feriado</td><td>ignora</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Dado ruim gera regra ruim</b>, mesmo com todo o resto bem feito.</p></div>
+  </section>
+
+  <!-- 14 MONTANDO O APP -->
+  <section class="step" data-step="app" data-label="Montando o app" hidden>
+    <div class="eyebrow">Passo 14 de 16</div>
+    <h2>Juntar as peças e montar o app</h2>
+    <p class="lead">Você já viu todas as partes. Agora é ver como elas viram um app de verdade.</p>
+
+    <div class="panel">
+      <h3>As 5 peças do app</h3>
+      <div class="pieces" id="pieces"></div>
+      <div class="note" id="pieceInfo"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Um momento do app funcionando</h3>
+      <p class="muted">Mude a chance que o modelo deu e rode o fluxo. Conta 32.000, arriscando 0,5%, limite de compra 27%.</p>
+      <div class="range"><div class="row"><label for="flP">Chance que o modelo deu</label><b id="flPv"></b></div><input type="range" id="flP" min="0" max="60" step="1" value="31"></div>
+      <div class="btns"><button class="btn" id="flRun">Rodar o fluxo</button></div>
+      <div class="pipe" id="pipe"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Construir em fases, uma só depois que a anterior funcionar</h3>
+      <div class="phases">
+        <div class="phase first"><span class="eyebrow">Fase 1</span><b>Laboratório</b><span class="muted">Só estuda o histórico e mostra se a regra passa nas provas.</span><span class="pill win">nenhum dinheiro</span></div>
+        <div class="phase first"><span class="eyebrow">Fase 2</span><b>Avisos</b><span class="muted">Vigia ao vivo e manda: "comprar agora, stop X, alvo Y, Z cotas". O Elton decide e clica.</span><span class="pill even">o Elton decide</span></div>
+        <div class="phase"><span class="eyebrow">Fase 3</span><b>Demo automática</b><span class="muted">Compra sozinho, mas na conta demo.</span><span class="pill win">nenhum dinheiro</span></div>
+        <div class="phase"><span class="eyebrow">Fase 4</span><b>Real, pequeno</b><span class="muted">Compra sozinho na conta real, arriscando 0,5%.</span><span class="pill loss">pouco dinheiro</span></div>
+      </div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Para a reunião:</b> as fases 1 e 2 são o primeiro entregável. Mostram ao Elton, com números, se a ideia funciona, sem arriscar o dinheiro dele. As fases 3 e 4 só começam se a 1 e a 2 derem certo.</p></div>
+  </section>
+
+  <!-- 15 CORRETORA -->
+  <section class="step" data-step="corretora" data-label="Na corretora" hidden>
+    <div class="eyebrow">Passo 15 de 16</div>
+    <h2>Como isso aparece na tela da corretora</h2>
+    <p class="lead">No MetaTrader 5 o ouro se chama XAUUSD e é cotado em dólares por onça. A tela mostra stop, alvo e resultado. O R você calcula.</p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Nova ordem</h3>
+        <div class="fields">
+          <div class="field"><label for="bid6">Venda (Bid)</label><input type="text" inputmode="decimal" id="bid6"></div>
+          <div class="field"><label for="ask6">Compra (Ask)</label><input type="text" inputmode="decimal" id="ask6"></div>
+          <div class="field"><label for="vol6">Volume (lotes)</label><input type="text" inputmode="decimal" id="vol6"></div>
+          <div class="field"><label for="sl6"><span class="dot l"></span>Stop Loss</label><input type="text" inputmode="decimal" id="sl6"></div>
+          <div class="field"><label for="tp6"><span class="dot w"></span>Take Profit</label><input type="text" inputmode="decimal" id="tp6"></div>
+        </div>
+        <p class="muted" style="font-size:.85rem">1 lote de ouro = 100 onças na maioria das corretoras.</p>
+      </div>
+      <div class="term" aria-label="Simulação da tela do MT5">
+        <div class="bar-t"><i></i><i></i><i></i>&nbsp; XAUUSD · ordem</div>
+        <div class="body" id="term6"></div>
+      </div>
+    </div>
+    <div class="calc" id="calc6"></div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Relatório depois de várias operações</h3>
+        <div class="fields">
+          <div class="field"><label for="tt6">Total de operações</label><input type="text" inputmode="numeric" id="tt6"></div>
+          <div class="field"><label for="pw6"><span class="dot w"></span>Bateram o alvo</label><input type="text" inputmode="numeric" id="pw6"></div>
+        </div>
+      </div>
+      <div class="term">
+        <div class="bar-t"><i></i><i></i><i></i>&nbsp; Relatório</div>
+        <div class="body" id="rep6"></div>
+      </div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>O spread é a taxa escondida.</b> Você compra pelo preço mais alto (Ask) e vende pelo mais baixo (Bid). Por isso a operação já abre um pouco no vermelho. Os preços aqui são exemplos.</p></div>
+  </section>
+
+  <!-- 7 COLINHA -->
+  <section class="step" data-step="colinha" data-label="Colinha" hidden>
+    <div class="eyebrow">Passo 16 de 16</div>
+    <h2>Colinha</h2>
+    <p class="lead">Tudo o que você precisa lembrar.</p>
+    <div class="sheet">
+      <div class="card"><h3>Quanto entro</h3><div class="f">cotas × entrada</div><p class="muted">10 × 3.200 = 32.000</p></div>
+      <div class="card"><h3>1R</h3><div class="f">entrada − stop</div><p class="muted">Por cota: 3.200 − 3.180 = 20. Com 10 cotas: 200. Bater o stop é sempre −1R.</p></div>
+      <div class="card"><h3>Alvo em R</h3><div class="f">(alvo − entrada) ÷ 1R</div><p class="muted">80 ÷ 20 = 4R, ou 800 ÷ 200 = 4R. Não misture 1 cota com 10.</p></div>
+      <div class="card"><h3>Acerto mínimo</h3><div class="f">1 ÷ (1 + alvo em R)</div><p class="muted">Alvo 4R: 1 ÷ 5 = 20%. Não esqueça o "1 +".</p></div>
+      <div class="card"><h3>R durante a operação</h3><div class="f">lucro na tela ÷ 1R</div><p class="muted">+200 ÷ 200 = +1R. −100 ÷ 200 = −0,5R.</p></div>
+      <div class="card"><h3>Expectativa</h3><div class="f">(verdes × ganho − vermelhas × perda) ÷ total</div><p class="muted">3 × 800 − 7 × 200 = 1.000. 1.000 ÷ 10 = +100 por operação.</p></div>
+      <div class="card"><h3>Regra</h3><div class="f">quando comprar + stop + alvo</div><p class="muted">Testada em anos de histórico. Serve se o acerto passa do mínimo com muitas operações.</p></div>
+      <div class="card"><h3>Prova</h3><div class="f">estudo → prova → avança → repete</div><p class="muted">A regra só serve se passar do mínimo no período que nunca viu, em todas as rodadas.</p></div>
+      <div class="card"><h3>Ao vivo</h3><div class="f">demo → opera → confere → retreina</div><p class="muted">A cada 20 operações compara o acerto. Abaixo do mínimo: pausa e refaz estudo e prova.</p></div>
+      <div class="card"><h3>Semáforo</h3><div class="f">olhe 100 operações, não 1 bloco</div><p class="muted">Verde: continua. Amarelo: avisa. Vermelho: pausa e refaz estudo e prova.</p></div>
+      <div class="card"><h3>Overfitting</h3><div class="f">estudo × prova</div><p class="muted">Caiu muito na prova, desmorona ao mexer um pouco ou tem poucas operações: decorou.</p></div>
+      <div class="card"><h3>Modelo</h3><div class="f">ficha → chance → compra com folga</div><p class="muted">Compra só se a chance passa do limite. Confira se a chance é honesta: disse 30%, aconteceu ≈ 30%.</p></div>
+      <div class="card"><h3>Vazamento do futuro</h3><div class="f">só o que já se sabia antes da compra</div><p class="muted">Resultado bom demais, desconfie. Atrase a ficha 1 dia: se desabar, o futuro estava vazando.</p></div>
+      <div class="card"><h3>Quanto arriscar</h3><div class="f">cotas = (conta × %) ÷ 1R por cota</div><p class="muted">32.000 × 0,5% = 160. Stop a 20: 160 ÷ 20 = 8 cotas. A perda no stop é sempre 1R.</p></div>
+      <div class="card"><h3>Os dados</h3><div class="f">abertura · máxima · mínima · fechamento</div><p class="muted">Tocou stop e alvo no mesmo candle? Abra candles menores; sem saber, conta stop. Desconte o spread.</p></div>
+      <div class="card"><h3>O app</h3><div class="f">coletor → laboratório → vigia → executor → painel</div><p class="muted">Fases: laboratório, avisos, demo automática, real pequeno. Uma só depois da outra funcionar.</p></div>
+    </div>
+    <div class="keep"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="var(--gold-strong)"/><path d="M5 9.5l2.5 2.5L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <p><b>Acertar muito não basta.</b> Importa quanto você ganha quando acerta e quanto perde quando erra. Com 3 verdes em 10 você ganha, porque cada verde vale 4 vezes uma vermelha.</p></div>
+  </section>
+
+  </main>
+
+  <div class="pager">
+    <button class="btn ghost" id="prev">← Anterior</button>
+    <button class="btn" id="next">Próximo →</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* números pt-BR */
+function parseNum(v){v=String(v).trim().replace(/\s/g,'').replace(/^R\$/,'');
+  if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(v))v=v.replace(/\./g,'');
+  const n=parseFloat(v);return isFinite(n)?n:NaN}
+const nf=(n,min,max)=>n.toLocaleString('pt-BR',{minimumFractionDigits:min,maximumFractionDigits:max});
+const fp=n=>nf(n,Math.abs(n*100-Math.round(n)*100)<1e-6?0:2,2);
+const fr=n=>nf(n,0,2);
+const fs=n=>(n>0.0000001?'+':n<-0.0000001?'−':'')+fr(Math.abs(n));
+const pct=n=>nf(n*100,0,2)+'%';
+function flash(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}
+
+/* estado */
+const S={entry:3200,stop:3180,target:3280,qty:10,alvoR:4,verdes:3,draws:[]};
+const valid=()=>S.stop<S.entry&&S.target>S.entry&&S.qty>0;
+const oneR=()=>S.entry-S.stop;
+const priceR=()=>(S.target-S.entry)/oneR();
+const gain=()=>(S.target-S.entry)*S.qty, loss=()=>(S.entry-S.stop)*S.qty;
+
+/* navegação */
+const steps=$$('section.step');let cur=0;const seen=new Set([0]);
+const trail=$('#trail');
+steps.forEach((s,i)=>{const b=document.createElement('button');b.className='tbtn';
+  b.innerHTML=`<span class="n">${i+1}</span><span class="lbl">${s.dataset.label}</span>`;
+  b.onclick=()=>go(i,true);trail.appendChild(b)});
+function go(i,push){cur=Math.max(0,Math.min(steps.length-1,i));seen.add(cur);
+  steps.forEach((s,j)=>s.hidden=j!==cur);
+  $$('.tbtn').forEach((b,j)=>{if(j===cur)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');b.classList.toggle('seen',seen.has(j)&&j!==cur)});
+  $('#prev').disabled=cur===0;$('#next').textContent=cur===steps.length-1?'Voltar ao início':'Próximo →';
+  {const tb=$$('.tbtn')[cur];trail.scrollTo({left:Math.max(0,tb.offsetLeft-trail.clientWidth/2+tb.offsetWidth/2),behavior:reduce?'auto':'smooth'})}
+  if(push){try{history.replaceState(null,'','#'+steps[cur].dataset.step)}catch(e){}window.scrollTo({top:0,behavior:reduce?'auto':'smooth'})}
+}
+$('#prev').onclick=()=>go(cur-1,true);
+$('#next').onclick=()=>go(cur===steps.length-1?0:cur+1,true);
+function fromHash(){const h=location.hash.slice(1);const i=steps.findIndex(s=>s.dataset.step===h);go(i<0?0:i,false)}
+addEventListener('hashchange',fromHash);
+
+/* campos de preço sincronizados */
+const priceInputs=$$('input[data-k]');
+function syncPriceInputs(except){priceInputs.forEach(inp=>{if(inp!==except)inp.value=fp(S[inp.dataset.k]);inp.classList.remove('bad')})}
+priceInputs.forEach(inp=>inp.addEventListener('input',()=>{
+  const n=parseNum(inp.value);if(isNaN(n)){inp.classList.add('bad');return}
+  inp.classList.remove('bad');S[inp.dataset.k]=n;
+  $$('.chip[data-ex]').forEach(c=>c.classList.remove('on'));$('#exNote').hidden=true;
+  syncPriceInputs(inp);onPricesChanged();
+}));
+function onPricesChanged(){
+  $$('[data-warn]').forEach(w=>w.hidden=valid());
+  if(valid())S.alvoR=priceR();
+  tally={w:0,l:0,t:0,sumR:0};lastPath=null;S.draws=[];
+  setupNow();renderAll();
+}
+
+/* PASSO 1 */
+let tally={w:0,l:0,t:0,sumR:0},lastPath=null,anim=null;
+const C1={x0:24,x1:500,y0:24,y1:276};
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function simPath(){const e=S.entry,s=S.stop,t=S.target,sig=(t-s)/9;let p=e;const pts=[e];
+  for(let i=1;i<=60;i++){p+=sig*gauss();if(p>=t){pts.push(t);return{pts,out:'w'}}if(p<=s){pts.push(s);return{pts,out:'l'}}pts.push(p)}
+  return{pts,out:'t'}}
+function y1(p){const lo=S.stop-(S.target-S.stop)*.22,hi=S.target+(S.target-S.stop)*.22;return C1.y1-(p-lo)/(hi-lo)*(C1.y1-C1.y0)}
+const x1=i=>C1.x0+i/60*(C1.x1-C1.x0);
+function drawChart1(path,upto){
+  const svg=$('#chart1');if(!valid()){svg.innerHTML=`<text x="320" y="150" text-anchor="middle" fill="var(--muted)" font-size="14">Ajuste os valores para ver o gráfico</text>`;return}
+  const yt=y1(S.target),ye=y1(S.entry),ys=y1(S.stop);
+  let h=`<rect x="${C1.x0}" y="${C1.y0-10}" width="${C1.x1-C1.x0}" height="${yt-C1.y0+10}" fill="var(--win-soft)" opacity=".7"/>
+  <rect x="${C1.x0}" y="${ys}" width="${C1.x1-C1.x0}" height="${C1.y1+10-ys}" fill="var(--loss-soft)" opacity=".7"/>
+  <line x1="${C1.x0}" x2="${C1.x1}" y1="${yt}" y2="${yt}" stroke="var(--win)" stroke-width="2.5"/>
+  <line x1="${C1.x0}" x2="${C1.x1}" y1="${ye}" y2="${ye}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 5"/>
+  <line x1="${C1.x0}" x2="${C1.x1}" y1="${ys}" y2="${ys}" stroke="var(--loss)" stroke-width="2.5"/>
+  <line x1="${C1.x1}" x2="${C1.x1}" y1="${C1.y0-10}" y2="${C1.y1+10}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="2 4"/>
+  <text x="${C1.x1-4}" y="${C1.y1+4}" text-anchor="end" fill="var(--muted)" font-size="11">60 min</text>
+  <text x="${C1.x1+12}" y="${yt-4}" fill="var(--win)" font-size="12" font-weight="600">ALVO ${fp(S.target)}</text>
+  <text x="${C1.x1+12}" y="${yt+13}" fill="var(--win)" font-size="12">${fs(priceR())}R</text>
+  <text x="${C1.x1+12}" y="${ye+4}" fill="var(--muted)" font-size="12">entrada ${fp(S.entry)}</text>
+  <text x="${C1.x1+12}" y="${ys-4}" fill="var(--loss)" font-size="12" font-weight="600">STOP ${fp(S.stop)}</text>
+  <text x="${C1.x1+12}" y="${ys+13}" fill="var(--loss)" font-size="12">−1R</text>
+  <circle cx="${C1.x0}" cy="${ye}" r="5" fill="var(--gold-strong)"/>`;
+  if(path){const n=upto==null?path.pts.length:upto;const pts=path.pts.slice(0,n).map((p,i)=>`${x1(i).toFixed(1)},${y1(p).toFixed(1)}`).join(' ');
+    const last=path.pts[n-1],col=(n===path.pts.length)?(path.out==='w'?'var(--win)':path.out==='l'?'var(--loss)':'var(--gold-strong)'):'var(--ink)';
+    h+=`<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x1(n-1)}" cy="${y1(last)}" r="6" fill="${col}" stroke="var(--surface)" stroke-width="2"/>`}
+  svg.innerHTML=h}
+function outcomeR(path){return path.out==='w'?priceR():path.out==='l'?-1:(path.pts[path.pts.length-1]-S.entry)/oneR()}
+function resRender(path){const el=$('#res1');
+  if(!path){el.innerHTML='<span class="muted">Clique em simular para ver o preço andar.</span>'}
+  else{const r=outcomeR(path),mins=path.pts.length-1;
+    const map={w:['win','Bateu o alvo'],l:['loss','Bateu o stop'],t:['even','Venceu o tempo']};const[c,t]=map[path.out];
+    el.innerHTML=`<span class="pill ${c}">${t}</span><span class="num" style="font-weight:600">${fs(r)}R</span><span class="muted">em ${mins} min</span>`;flash(el)}
+  const n=tally.w+tally.l+tally.t,tl=$('#tally1');
+  tl.innerHTML=n?`<span>Operações <b>${n}</b></span><span>Alvo <b class="pos">${tally.w}</b></span><span>Stop <b class="neg">${tally.l}</b></span><span>Tempo <b>${tally.t}</b></span><span>Taxa de acerto <b>${pct(tally.w/n)}</b></span>`:'';
+  renderRW()}
+function count(p){tally[p.out]++;tally.sumR+=outcomeR(p)}
+$('#sim1').onclick=()=>{if(!valid())return;cancelAnimationFrame(anim);const p=simPath();lastPath=p;
+  if(reduce){drawChart1(p);count(p);resRender(p);return}
+  const N=p.pts.length,t0=performance.now(),dur=Math.min(1600,N*45);$('#res1').innerHTML='<span class="muted">Preço andando…</span>';
+  const tick=now=>{const k=Math.min(1,(now-t0)/dur);drawChart1(p,Math.max(1,Math.ceil(k*N)));if(k<1)anim=requestAnimationFrame(tick);else{count(p);resRender(p)}};anim=requestAnimationFrame(tick)};
+$('#sim100').onclick=()=>{if(!valid())return;cancelAnimationFrame(anim);let p;for(let i=0;i<100;i++){p=simPath();count(p)}lastPath=p;drawChart1(p);resRender(p)};
+
+/* PASSO 2 */
+const EX=[
+ {id:'d',lbl:'Onça 3.200 · 10 cotas',e:3200,s:3180,t:3280,q:10,cls:'ok',txt:'<b>Você acertou tudo.</b> Entrou com 10 × 3.200 = 32.000. Por cota: 1R = 20 e alvo = 80 ÷ 20 = 4R. Com 10 cotas: 1R = 200 e alvo = 800 ÷ 200 = 4R.'},
+ {id:'e',lbl:'Ouro 2.650 · 10 cotas',e:2650,s:2630,t:2690,q:10,cls:'err',txt:'<b>Você achou 20R.</b> Dividiu 400 (das 10 cotas) por 20 (de 1 cota). O certo: 40 ÷ 20 = 2R, ou 400 ÷ 200 = 2R.'},
+ {id:'a',lbl:'Ouro 1.750',e:1750,s:1715,t:1800,q:1,cls:'err',txt:'<b>Você escreveu "o R é 50/35 = 1,43R".</b> A conta estava certa, só o nome trocou: 1R vale 35, e é o <b>alvo</b> que vale 1,43R.'},
+ {id:'b',lbl:'Ouro 2.430',e:2430,s:2400,t:2520,q:1,cls:'err',txt:'<b>R e alvo certos</b> (1R = 30, alvo = 3R). O tropeço foi no acerto mínimo: 1 ÷ 3 = 33%. O certo é 1 ÷ (1 + 3) = 25%.'},
+ {id:'c',lbl:'Grama 118,43',e:118.43,s:112,t:126,q:1,cls:'ok',txt:'<b>Você acertou tudo:</b> 1R = 6,43, alvo = 1,18R, acerto mínimo ≈ 45,9%. Em reais e gramas, o R funciona igual.'}];
+$('#examples').innerHTML=EX.map(x=>`<button class="chip" data-ex="${x.id}">${x.lbl}</button>`).join('');
+$$('.chip[data-ex]').forEach(b=>b.onclick=()=>{const x=EX.find(e=>e.id===b.dataset.ex);
+  Object.assign(S,{entry:x.e,stop:x.s,target:x.t,qty:x.q});syncPriceInputs();onPricesChanged();
+  $$('.chip[data-ex]').forEach(c=>c.classList.toggle('on',c===b));
+  const n=$('#exNote');n.className='note '+x.cls;n.innerHTML=x.txt;n.hidden=false;flash(n)});
+function renderStep2(){
+  const svg=$('#ruler'),calc=$('#calc2');
+  if(!valid()){svg.innerHTML='';calc.innerHTML='<div class="ln muted">Ajuste os valores: stop abaixo da entrada, alvo acima.</div>';$('#mon2').innerHTML='';return}
+  const R=oneR(),aR=priceR(),q=S.qty,X0=30,X1=610,sc=(X1-X0)/(S.target-S.stop),X=p=>X0+(p-S.stop)*sc;
+  let h=`<rect x="${X(S.stop)}" y="40" width="${X(S.entry)-X(S.stop)}" height="38" rx="6" fill="var(--loss-soft)" stroke="var(--loss)" stroke-width="1.5"/>
+  <text x="${(X(S.stop)+X(S.entry))/2}" y="64" text-anchor="middle" fill="var(--loss)" font-size="13" font-weight="600">1R</text>`;
+  const nb=Math.ceil(aR-1e-9);
+  if(nb<=24){for(let i=0;i<nb;i++){const a=S.entry+i*R,b=Math.min(S.entry+(i+1)*R,S.target),w=X(b)-X(a),full=(b-a)>=R-1e-9;
+    h+=`<rect x="${X(a)+1}" y="40" width="${Math.max(0,w-2)}" height="38" rx="6" fill="var(--win-soft)" stroke="var(--win)" stroke-width="1.5" ${full?'':'stroke-dasharray="4 3"'}/>`;
+    if(w>26)h+=`<text x="${X(a)+w/2}" y="64" text-anchor="middle" fill="var(--win)" font-size="12" font-weight="600">${full?(i+1)+'R':'+'+fr((b-a)/R)}</text>`}}
+  else{h+=`<rect x="${X(S.entry)}" y="40" width="${X(S.target)-X(S.entry)}" height="38" rx="6" fill="var(--win-soft)" stroke="var(--win)"/>`}
+  const tick=(p,lbl,col)=>`<line x1="${X(p)}" x2="${X(p)}" y1="32" y2="86" stroke="${col}" stroke-width="2"/><text x="${X(p)}" y="104" text-anchor="middle" fill="${col}" font-size="12">${lbl}</text><text x="${X(p)}" y="120" text-anchor="middle" fill="var(--muted)" font-size="11">${fp(p)}</text>`;
+  h+=tick(S.stop,'stop','var(--loss)')+tick(S.entry,'entrada','var(--gold)')+tick(S.target,'alvo','var(--win)');
+  h+=`<text x="${(X(S.entry)+X(S.target))/2}" y="24" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="600">alvo = ${fr(aR)}R</text>`;
+  svg.innerHTML=h;
+  const dT=S.target-S.entry;
+  calc.innerHTML=`
+   <div class="hd">Quanto você entra</div>
+   <div class="ln"><span class="k">entrada em dinheiro</span><span>${fr(q)} × ${fp(S.entry)}</span><span class="eq">=</span><span class="r">${fp(q*S.entry)}</span></div>
+   <div class="hd">Por cota</div>
+   <div class="ln"><span class="k">1R</span><span>${fp(S.entry)} − ${fp(S.stop)}</span><span class="eq">=</span><span class="r neg">${fp(R)}</span></div>
+   <div class="ln"><span class="k">distância do alvo</span><span>${fp(S.target)} − ${fp(S.entry)}</span><span class="eq">=</span><span class="r">${fp(dT)}</span></div>
+   <div class="ln"><span class="k">alvo em R</span><span>${fp(dT)} ÷ ${fp(R)}</span><span class="eq">=</span><span class="r pos">${fr(aR)}R</span></div>
+   ${q!==1?`<div class="hd">Com ${fr(q)} cotas</div>
+   <div class="ln"><span class="k">1R</span><span>${fp(R)} × ${fr(q)}</span><span class="eq">=</span><span class="r neg">${fp(R*q)}</span></div>
+   <div class="ln"><span class="k">distância do alvo</span><span>${fp(dT)} × ${fr(q)}</span><span class="eq">=</span><span class="r">${fp(dT*q)}</span></div>
+   <div class="ln"><span class="k">alvo em R</span><span>${fp(dT*q)} ÷ ${fp(R*q)}</span><span class="eq">=</span><span class="r pos">${fr(aR)}R</span></div>`:''}`;
+  flash(calc);renderMon()}
+function setupNow(){if(!valid())return;const r=$('#now2');r.min=S.stop;r.max=S.target;r.step=(S.target-S.stop)/400;r.value=S.entry}
+function renderMon(){if(!valid())return;const p=+$('#now2').value,R1=loss(),l=(p-S.entry)*S.qty,r=l/R1;
+  $('#now2v').textContent=fp(p);
+  const where=Math.abs(p-S.target)<1e-9?'<span class="pill win">tocou o alvo: a corretora fecha</span>':Math.abs(p-S.stop)<1e-9?'<span class="pill loss">tocou o stop: a corretora fecha</span>':'';
+  $('#mon2').innerHTML=`<div class="ln"><span class="k">lucro na tela</span><span>(${fp(p)} − ${fp(S.entry)}) × ${fr(S.qty)}</span><span class="eq">=</span><span class="r ${l>0?'pos':l<0?'neg':''}">${fs(l)}</span></div>
+   <div class="ln"><span class="k">em R</span><span>${fs(l)} ÷ ${fp(R1)}</span><span class="eq">=</span><span class="r ${r>0?'pos':r<0?'neg':''}">${fs(r)}R</span></div>${where?`<div class="ln">${where}</div>`:''}`}
+$('#now2').addEventListener('input',renderMon);
+
+/* PASSO 3 */
+function renderStep3(){
+  const r=S.alvoR,m=1/(1+r);$('#r3').value=r;$('#r3v').textContent=fr(r)+'R';
+  $('#min3').textContent=pct(m);
+  $('#calc3').innerHTML=`<div class="ln"><span class="k">acerto mínimo</span><span>1 ÷ (1 + ${fr(r)})</span><span class="eq">=</span><span>1 ÷ ${fr(1+r)}</span><span class="eq">=</span><span class="r gold">${pct(m)}</span></div>`;
+  const isInt=Math.abs(r-Math.round(r))<0.005&&Math.round(r)<=8,dots=$('#dots3');
+  if(isInt){const n=Math.round(r);$('#grpTitle').textContent=`Grupo de empate: 1 acerto + ${n} ${n===1?'erro':'erros'} = ${n+1} operações`;
+    let h=`<div class="tok w">+${n}R</div>`;for(let i=0;i<n;i++)h+=`<div class="tok l" style="animation-delay:${(i+1)*40}ms">−1R</div>`;
+    dots.innerHTML=h+`<span class="num muted" style="margin-left:6px">saldo = 0</span>`}
+  else{$('#grpTitle').textContent=`Um acerto de +${fr(r)}R paga ${fr(r)} erros de −1R`;dots.innerHTML=''}
+  const b=$('#bar3');b.style.width=(m*100)+'%';b.textContent=m>.12?'acertos '+pct(m):'';
+  $('#tbl3 tbody').innerHTML=[1,1.43,2,3,4].map(x=>`<tr class="${Math.abs(x-r)<0.006?'hi':''}"><td>${fr(x)}R</td><td>${pct(1/(1+x))}</td></tr>`).join('')}
+function renderRW(){const n=tally.w+tally.l+tally.t,el=$('#rw3');
+  if(n<30||!valid()){el.hidden=true;return}
+  el.hidden=false;el.innerHTML=`<b>Lembra da simulação do passo 1?</b> Com o preço andando ao acaso, você acertou ${pct(tally.w/n)} em ${n} operações, perto do mínimo de ${pct(1/(1+priceR()))}. Sem um bom critério para a hora de entrar, você fica perto do empate. É isso que o app precisa melhorar.`}
+$('#r3').addEventListener('input',e=>{S.alvoR=+e.target.value;renderStep3()});
+
+/* PASSO 4: saco de bolinhas */
+function renderBag(pick){
+  const g=gain(),l=loss();
+  $('#bag').innerHTML=Array.from({length:10},(_,i)=>{const isG=i<S.verdes;
+    return `<div class="ball ${isG?'g':'r'}${i===pick?' pick':''}">${isG?'+'+fr(g):'−'+fr(l)}</div>`}).join('')}
+function renderDraws(){
+  const g=gain(),l=loss(),d=S.draws,n=d.length;let acc=0;const pts=[0];d.forEach(x=>{acc+=x?g:-l;pts.push(acc)});
+  const t=$('#tot4');t.textContent=fs(acc);t.className='v '+(acc>0?'pos':acc<0?'neg':'');if(n)flash(t);
+  const v=d.filter(Boolean).length;
+  $('#cnt4').textContent=n?`${n} bolinha${n>1?'s':''} · ${v} verde${v!==1?'s':''} · ${n-v} vermelha${n-v!==1?'s':''} · média ${fs(acc/n)} por bolinha`:'Nenhuma bolinha tirada ainda';
+  $('#drawn4').innerHTML=d.slice(-80).map(x=>`<span class="mb ${x?'g':'r'}"></span>`).join('');
+  const svg=$('#chart4');
+  if(!n){svg.innerHTML=`<text x="320" y="95" text-anchor="middle" fill="var(--muted)" font-size="13">Tire bolinhas para ver o caminho do dinheiro</text>`;return}
+  const lo=Math.min(0,...pts),hi=Math.max(0,...pts),span=(hi-lo)||1,X0=60,X1=600,Y0=22,Y1=160;
+  const X=i=>X0+i/Math.max(n,1)*(X1-X0),Y=v=>Y1-(v-lo)/span*(Y1-Y0);
+  const line=pts.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const col=acc>0?'var(--win)':acc<0?'var(--loss)':'var(--muted)';
+  svg.innerHTML=`
+   <line x1="${X0}" x2="${X1}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)" stroke-width="1.5"/>
+   <text x="${X0-8}" y="${Y(0)+4}" text-anchor="end" fill="var(--muted)" font-size="11">0</text>
+   ${hi>0?`<text x="${X0-8}" y="${Y(hi)+4}" text-anchor="end" fill="var(--muted)" font-size="11">${fs(hi)}</text>`:''}
+   ${lo<0?`<text x="${X0-8}" y="${Y(lo)+4}" text-anchor="end" fill="var(--muted)" font-size="11">${fs(lo)}</text>`:''}
+   <polygon points="${X0},${Y(0)} ${line} ${X(n)},${Y(0)}" fill="${col}" opacity=".12"/>
+   <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
+   <circle cx="${X(n)}" cy="${Y(acc)}" r="5" fill="${col}"/>
+   <text x="${X0}" y="182" fill="var(--muted)" font-size="11">início</text>
+   <text x="${X1}" y="182" text-anchor="end" fill="var(--muted)" font-size="11">bolinha ${n}</text>`}
+function renderStep4(){
+  const v=S.verdes,r=10-v,ok=valid(),g=ok?gain():0,l=ok?loss():0;
+  $('#v4').value=v;$('#v4v').textContent=`${v} verdes · ${r} vermelhas`;
+  $('#opInfo').innerHTML=ok?`Sua operação (do passo 2): verde <b class="pos">+${fr(g)}</b> (bateu o alvo) · vermelha <b class="neg">−${fr(l)}</b> (bateu o stop).`:'<span class="warn">Ajuste a operação no passo 2.</span>';
+  renderBag();renderDraws();
+  const tot=v*g-r*l,exp=tot/10;
+  $('#calc4').innerHTML=`
+   <div class="ln"><span class="k">verdes colocam</span><span>${v} × ${fr(g)}</span><span class="eq">=</span><span class="r pos">+${fr(v*g)}</span></div>
+   <div class="ln"><span class="k">vermelhas tiram</span><span>${r} × ${fr(l)}</span><span class="eq">=</span><span class="r neg">−${fr(r*l)}</span></div>
+   <div class="ln total"><span class="k">total do saco</span><span>${fr(v*g)} − ${fr(r*l)}</span><span class="eq">=</span><span class="r ${tot>0?'pos':tot<0?'neg':''}">${fs(tot)}</span></div>
+   <div class="ln"><span class="k">por bolinha</span><span>${fs(tot)} ÷ 10</span><span class="eq">=</span><span class="r ${exp>0?'pos':exp<0?'neg':''}">${fs(exp)}</span>${ok?`<span class="eq">=</span><span class="r">${fs(exp/l)}R</span>`:''}</div>`;
+  flash($('#calc4'));
+  const e=$('#exp4');e.textContent=fs(exp)+' por operação';e.className='v '+(exp>0?'pos':exp<0?'neg':'');
+  $('#pill4').innerHTML=exp>0?'<span class="pill win">o dinheiro vai crescendo</span>':exp<0?'<span class="pill loss">o dinheiro vai sumindo</span>':'<span class="pill even">fica onde está</span>';
+  const rows=[...new Set([1,2,3,5,v])].sort((a,b)=>a-b);
+  $('#tbl4').innerHTML=`<thead><tr><th>Verdes</th><th>Vermelhas</th><th>Verdes colocam</th><th>Vermelhas tiram</th><th>Saldo</th><th>÷ 10</th></tr></thead><tbody>`+
+   rows.map(x=>{const y=10-x,s=x*g-y*l;return `<tr class="${x===v?'hi':''}"><td>${x}</td><td>${y}</td><td class="pos">${x} × ${fr(g)} = +${fr(x*g)}</td><td class="neg">${y} × ${fr(l)} = −${fr(y*l)}</td><td>${fs(s)}</td><td><b class="${s>0?'pos':s<0?'neg':''}">${fs(s/10)}</b></td></tr>`}).join('')+'</tbody>'}
+let drawing=false;
+function drawOne(){return Math.floor(Math.random()*10)}
+$('#draw1').onclick=()=>{if(!valid()||drawing)return;const i=drawOne();
+  if(reduce){S.draws.push(i<S.verdes);renderDraws();return}
+  drawing=true;renderBag(i);setTimeout(()=>{S.draws.push(i<S.verdes);renderDraws();renderBag();drawing=false},550)};
+$('#draw20').onclick=()=>{if(!valid())return;for(let k=0;k<20;k++)S.draws.push(drawOne()<S.verdes);renderDraws()};
+$('#draw0').onclick=()=>{S.draws=[];renderDraws()};
+$('#v4').addEventListener('input',e=>{S.verdes=+e.target.value;S.draws=[];renderStep4()});
+
+/* PASSO 6 */
+const M={bid:4159.85,ask:4160.15,vol:0.10,sl:4150.15,tp:4180.15,tt:20,pw:8};
+[['bid6','bid'],['ask6','ask'],['vol6','vol'],['sl6','sl'],['tp6','tp'],['tt6','tt'],['pw6','pw']].forEach(([id,k])=>{const el=$('#'+id);
+  el.value=(k==='tt'||k==='pw')?M[k]:k==='vol'?nf(M[k],2,2):fp(M[k]);
+  el.addEventListener('input',()=>{const n=parseNum(el.value);el.classList.toggle('bad',isNaN(n));if(!isNaN(n)){M[k]=n;renderStep6()}})});
+function renderStep6(){
+  const oz=M.vol*100,spr=M.ask-M.bid,Rd=(M.ask-M.sl)*oz,Td=(M.tp-M.ask)*oz,aR=Td/Rd,ok=M.sl<M.ask&&M.tp>M.ask&&oz>0;
+  $('#term6').innerHTML=`
+   <div class="ln"><span>Venda / Compra</span><span>${fp(M.bid)} / ${fp(M.ask)}</span></div>
+   <div class="ln"><span>Volume</span><span>${nf(M.vol,2,2)} lote · ${fr(oz)} onças</span></div>
+   <div class="ln"><span>Stop Loss</span><span class="nt">${fp(M.sl)}</span></div>
+   <div class="ln"><span>Take Profit</span><span class="pt">${fp(M.tp)}</span></div>
+   <div class="ln"><span>Lucro ao abrir</span><span class="nt">${nf(-spr*oz,2,2)}</span></div>
+   <div class="buy"><span class="s">Vender ${fp(M.bid)}</span><span class="b">Comprar ${fp(M.ask)}</span></div>`;
+  $('#calc6').innerHTML=!ok?'<div class="ln warn">Na compra, o Stop Loss fica abaixo do preço de compra e o Take Profit acima.</div>':`
+   <div class="ln"><span class="k">spread</span><span>(${fp(M.ask)} − ${fp(M.bid)}) × ${fr(oz)} onças</span><span class="eq">=</span><span class="r neg">US$ ${nf(spr*oz,2,2)}</span></div>
+   <div class="ln"><span class="k">1R</span><span>(${fp(M.ask)} − ${fp(M.sl)}) × ${fr(oz)} onças</span><span class="eq">=</span><span class="r neg">US$ ${nf(Rd,2,2)}</span></div>
+   <div class="ln"><span class="k">alvo</span><span>(${fp(M.tp)} − ${fp(M.ask)}) × ${fr(oz)} onças</span><span class="eq">=</span><span class="r pos">US$ ${nf(Td,2,2)} = ${fr(aR)}R</span></div>
+   <div class="ln total"><span class="k">acerto mínimo</span><span>1 ÷ (1 + ${fr(aR)})</span><span class="eq">=</span><span class="r gold">${pct(1/(1+aR))}</span></div>`;
+  const tt=Math.max(0,Math.round(M.tt)),pw=Math.min(tt,Math.max(0,Math.round(M.pw))),pl=tt-pw,gp=pw*Td,gl=pl*Rd,net=gp-gl,ep=tt?net/tt:0,pf=gl?gp/gl:0;
+  $('#rep6').innerHTML=!ok?'<div class="ln"><span>—</span></div>':`
+   <div class="ln"><span>Total Trades</span><span>${tt}</span></div>
+   <div class="ln"><span>Profit Trades (% of total)</span><span>${pw} (${tt?nf(pw/tt*100,2,2):'0,00'}%) <span class="tag">← acerto</span></span></div>
+   <div class="ln"><span>Loss Trades</span><span>${pl}</span></div>
+   <div class="ln"><span>Gross Profit</span><span class="pt">${nf(gp,2,2)}</span></div>
+   <div class="ln"><span>Gross Loss</span><span class="nt">−${nf(gl,2,2)}</span></div>
+   <div class="ln"><span>Total Net Profit</span><span>${nf(net,2,2)}</span></div>
+   <div class="ln"><span>Profit Factor</span><span>${nf(pf,2,2)}</span></div>
+   <div class="ln"><span>Expected Payoff</span><span>${nf(ep,2,2)} <span class="tag">← expectativa = ${fs(ep/Rd)}R</span></span></div>`}
+
+/* PASSO DA REGRA: 3 quedas seguidas */
+const DAYS=[3200,3190,3175,3160,3185,3210,3245,3230,3220,3205,3195,3180,3170,3160,3150,3165,3140,3125];
+const RULE={n:3,stop:20,alvo:80,qty:10,conta:32000};
+function runRule(){let prev=null,q=0,op=null,conta=RULE.conta;const ev=[],ops=[];
+  DAYS.forEach((p,i)=>{const d={day:i+1,p,txt:'',who:'app',kind:''};
+    if(op){
+      if(p>=op.alvo){op.out='w';op.end=i;conta+=RULE.alvo*RULE.qty;d.txt=`passou de ${fp(op.alvo)} → bateu o alvo da compra ${op.name}: +${fr(RULE.alvo*RULE.qty)}`;d.kind='w';d.who='cor';op=null;q=0}
+      else if(p<=op.stop){op.out='l';op.end=i;conta-=RULE.stop*RULE.qty;d.txt=`passou de ${fp(op.stop)} → bateu o stop da compra ${op.name}: −${fr(RULE.stop*RULE.qty)}`;d.kind='l';d.who='cor';op=null;q=0}
+      else{d.txt=`compra ${op.name} aberta: não tocou ${fp(op.stop)} nem ${fp(op.alvo)}`;d.who='cor';d.kind='open'}
+    }else if(prev===null){d.txt='início: o app começa a contar'}
+    else if(p<prev){q++;d.txt='queda '+q;d.kind='q';
+      if(q===RULE.n){op={name:'ABCDEFGHIJ'[ops.length],entry:p,stop:p-RULE.stop,alvo:p+RULE.alvo,start:i};ops.push(op);
+        d.txt=`queda ${q} → COMPRA ${op.name} a ${fp(p)} (stop ${fp(op.stop)}, alvo ${fp(op.alvo)})`;d.kind='buy'}}
+    else{q=0;d.txt='não caiu: a contagem volta a zero'}
+    d.conta=conta;prev=p;ev.push(d)});
+  return{ev,ops}}
+const RR=runRule();let shown=DAYS.length;
+function renderRule(){
+  const k=shown,ev=RR.ev,X0=64,X1=600,Y0=24,Y1=226,lo=3110,hi=3260;
+  const X=i=>X0+i*(X1-X0)/(DAYS.length-1),Y=p=>Y1-(p-lo)/(hi-lo)*(Y1-Y0);
+  let h='';
+  [3120,3160,3200,3240].forEach(t=>{h+=`<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${X0-8}" y="${Y(t)+4}" text-anchor="end" fill="var(--muted)" font-size="11">${fp(t)}</text>`});
+  [1,6,12,18].forEach(d=>{h+=`<text x="${X(d-1)}" y="${Y1+22}" text-anchor="middle" fill="var(--muted)" font-size="11">dia ${d}</text>`});
+  RR.ops.forEach(o=>{if(o.start>=k)return;const e=(o.end!=null&&o.end<k)?o.end:k-1,xe=Math.max(X(e),X(o.start)+14);
+    h+=`<line x1="${X(o.start)}" x2="${xe}" y1="${Y(o.alvo)}" y2="${Y(o.alvo)}" stroke="var(--win)" stroke-width="2" stroke-dasharray="5 4"/>
+        <line x1="${X(o.start)}" x2="${xe}" y1="${Y(o.stop)}" y2="${Y(o.stop)}" stroke="var(--loss)" stroke-width="2" stroke-dasharray="5 4"/>`});
+  if(k>0){const pts=DAYS.slice(0,k).map((p,i)=>`${X(i).toFixed(1)},${Y(p).toFixed(1)}`).join(' ');
+    h+=`<polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+    DAYS.slice(0,k).forEach((p,i)=>{h+=`<circle cx="${X(i)}" cy="${Y(p)}" r="3" fill="var(--ink)"/>`})}
+  RR.ops.forEach(o=>{if(o.start>=k)return;
+    h+=`<circle cx="${X(o.start)}" cy="${Y(o.entry)}" r="7" fill="var(--gold-strong)" stroke="var(--surface)" stroke-width="2"/>
+        <text x="${X(o.start)}" y="${Y(o.entry)+24}" text-anchor="middle" fill="var(--gold)" font-size="12" font-weight="600">${o.name}</text>`;
+    if(o.end!=null&&o.end<k){const c=o.out==='w'?'var(--win)':'var(--loss)';h+=`<circle cx="${X(o.end)}" cy="${Y(DAYS[o.end])}" r="7" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`}});
+  $('#chart6r').innerHTML=h;
+  const td=$('#today6');
+  if(!k){td.innerHTML='<span class="t muted">Clique em "Próximo dia" para o app começar a olhar o histórico.</span>'}
+  else{const d=ev[k-1];
+    td.innerHTML=`<span class="d">Dia ${d.day} · ${fp(d.p)}</span><span class="t">${d.kind==='w'?'<span class="pill win">alvo</span> ':d.kind==='l'?'<span class="pill loss">stop</span> ':''}${d.txt}</span><span class="who ${d.who}">${d.who==='app'?'quem vigia: o app':'quem vigia: a corretora'}</span><span class="num">conta ${fp(d.conta)}</span>`;flash(td)}
+  $('#days6').innerHTML=`<thead><tr><th>Dia</th><th>Preço</th><th>O que acontece</th><th>Quem vigia</th><th>Conta</th></tr></thead><tbody>`+
+    ev.slice(0,k).map((d,i)=>`<tr class="${i===k-1?'now':''}"><td>${d.day}</td><td>${fp(d.p)}</td><td class="t ${d.kind==='w'?'pos':d.kind==='l'?'neg':''}">${d.kind==='buy'?'<b>'+d.txt+'</b>':d.txt}</td><td><span class="who ${d.who}">${d.who==='app'?'app':'corretora'}</span></td><td>${fp(d.conta)}</td></tr>`).join('')+'</tbody>';
+  const closed=RR.ops.filter(o=>o.end!=null&&o.end<k),w=closed.filter(o=>o.out==='w').length,l=closed.length-w,g=RULE.alvo*RULE.qty,ls=RULE.stop*RULE.qty,s=w*g-l*ls,n=closed.length;
+  $('#calc6r').innerHTML=!n?'<div class="ln muted">Nenhuma compra fechou ainda.</div>':`
+   <div class="ln"><span class="k">🟢 bateram o alvo</span><span>${w} × ${fr(g)}</span><span class="eq">=</span><span class="r pos">+${fr(w*g)}</span></div>
+   <div class="ln"><span class="k">🔴 bateram o stop</span><span>${l} × ${fr(ls)}</span><span class="eq">=</span><span class="r neg">−${fr(l*ls)}</span></div>
+   <div class="ln total"><span class="k">saldo</span><span class="r ${s>0?'pos':s<0?'neg':''}">${fs(s)}</span><span class="eq">em ${n} ${n>1?'operações':'operação'}</span></div>
+   <div class="ln"><span class="k">acerto</span><span>${w} ÷ ${n}</span><span class="eq">=</span><span class="r">${pct(w/n)}</span><span class="eq">· mínimo para alvo 4R:</span><span class="r gold">20%</span></div>
+   <div class="ln"><span class="k">expectativa</span><span>${fs(s)} ÷ ${n}</span><span class="eq">=</span><span class="r ${s>0?'pos':s<0?'neg':''}">${fs(Math.round(s/n))} por operação</span></div>`;
+  const e=$('#exp6r');e.textContent=n?fs(Math.round(s/n))+' por operação':'';e.className='v '+(s>0?'pos':s<0?'neg':'');
+  $('#pill6r').innerHTML=!n?'':(w/n>0.2?'<span class="pill win">acima do mínimo, mas só '+n+' '+(n>1?'operações':'operação')+'</span>':'<span class="pill loss">abaixo ou no mínimo</span>');
+  $('#dayNext').textContent=k>=DAYS.length?'Começar de novo':'Próximo dia'}
+$('#dayNext').onclick=()=>{shown=shown>=DAYS.length?1:shown+1;renderRule()};
+$('#dayAll').onclick=()=>{shown=DAYS.length;renderRule()};
+$('#day0').onclick=()=>{shown=0;renderRule()};
+
+/* PASSO: APRENDEU OU DECOROU */
+const WF={A:{lbl:'Regra A',r:[[31,29],[30,27],[30,28]]},B:{lbl:'Regra B',r:[[62,14],[58,17],[60,15]]}};
+const ROUNDS=[{est:[1,2],pro:3},{est:[2,3],pro:4},{est:[3,4],pro:5}];
+let wfR='A',wfO=0;
+$('#wfRule').innerHTML=Object.keys(WF).map(k=>`<button class="chip" data-wfr="${k}">${WF[k].lbl}</button>`).join('');
+$('#wfRound').innerHTML=ROUNDS.map((r,i)=>`<button class="chip" data-wfo="${i}">Rodada ${i+1}</button>`).join('');
+$$('[data-wfr]').forEach(b=>b.onclick=()=>{wfR=b.dataset.wfr;renderWF()});
+$$('[data-wfo]').forEach(b=>b.onclick=()=>{wfO=+b.dataset.wfo;renderWF()});
+function renderWF(){
+  $$('[data-wfr]').forEach(b=>b.classList.toggle('on',b.dataset.wfr===wfR));
+  $$('[data-wfo]').forEach(b=>b.classList.toggle('on',+b.dataset.wfo===wfO));
+  const R=ROUNDS[wfO],[e,p]=WF[wfR].r[wfO];
+  $('#wfYears').innerHTML=[1,2,3,4,5].map(y=>`<div class="yr ${R.est.includes(y)?'est':y===R.pro?'pro':''}">ano ${y}</div>`).join('');
+  $('#wfBarE').style.width=(e/70*100)+'%';$('#wfBarP').style.width=(p/70*100)+'%';
+  $('#wfValE').textContent=e+'%';$('#wfValP').textContent=p+'%';
+  $('#wfVerdict').innerHTML=p>20?`<span class="pill win">passou</span><span>Na prova continuou acima de 20%: <b>aprendeu</b>.</span>`:`<span class="pill loss">reprovou</span><span>Na prova caiu abaixo de 20%: <b>decorou</b>.</span>`;
+  flash($('#wfVerdict'));
+  $('#wfTable').innerHTML=`<thead><tr><th>Rodada</th><th>Estuda</th><th>Prova</th><th>Acerto no estudo</th><th>Acerto na prova</th><th></th></tr></thead><tbody>`+
+    ROUNDS.map((r,i)=>{const[a,b]=WF[wfR].r[i];return `<tr class="${i===wfO?'hi':''}"><td>${i+1}</td><td>anos ${r.est.join(' e ')}</td><td>ano ${r.pro}</td><td>${a}%</td><td class="${b>20?'pos':'neg'}">${b}%</td><td>${b>20?'✅':'❌'}</td></tr>`}).join('')+'</tbody>';
+  const all=WF[wfR].r.every(x=>x[1]>20);
+  $('#wfFinal').innerHTML=all?`<span class="pill win">passou em todas</span><span>${WF[wfR].lbl} serve: pode ir para o ao vivo.</span>`:`<span class="pill loss">reprovou</span><span>${WF[wfR].lbl} descartada: parecia ótima no estudo, mas decorou.</span>`}
+
+/* PASSO: AO VIVO */
+const LIVE={alvos:[6,5,3],per:20,g:800,l:200,prova:28,min:20};
+$('#blocks').innerHTML=LIVE.alvos.map((a,i)=>`<div class="blk">
+  <span class="lb">Bloco ${i+1}<small>operações ${i*20+1} a ${i*20+20}</small></span>
+  <input type="range" id="blk${i}" min="0" max="20" step="1" value="${a}" aria-label="Alvos no bloco ${i+1}">
+  <span class="nums" id="blkN${i}"></span>
+  <span class="st" id="blkS${i}"></span></div>`).join('');
+LIVE.alvos.forEach((_,i)=>$('#blk'+i).addEventListener('input',e=>{LIVE.alvos[i]=+e.target.value;renderLive()}));
+function renderLive(){
+  let firstBad=-1;
+  LIVE.alvos.forEach((a,i)=>{const s=LIVE.per-a,acc=a/LIVE.per*100,saldo=a*LIVE.g-s*LIVE.l,exp=saldo/LIVE.per,ok=acc>LIVE.min;
+    if(!ok&&firstBad<0)firstBad=i;
+    $('#blkN'+i).innerHTML=`${a} alvo · ${s} stop<small>${fr(acc)}% · ${fs(exp)} por op.</small>`;
+    $('#blkS'+i).innerHTML=ok?'<span class="pill win">normal</span>':'<span class="pill loss">abaixo</span>'});
+  const X0=60,X1=620,Y0=16,Y1=170,max=60,Y=v=>Y1-v/max*(Y1-Y0),n=LIVE.alvos.length,bw=(X1-X0)/n;
+  let h='';
+  [0,20,40,60].forEach(t=>{h+=`<text x="${X0-8}" y="${Y(t)+4}" text-anchor="end" fill="var(--muted)" font-size="11">${t}%</text>`});
+  LIVE.alvos.forEach((a,i)=>{const acc=a/LIVE.per*100,x=X0+i*bw+bw*.25,w=bw*.5,col=acc>LIVE.min?'var(--win)':'var(--loss)';
+    h+=`<rect x="${x}" y="${Y(acc)}" width="${w}" height="${Y1-Y(acc)}" rx="6" fill="${col}" opacity=".85"/>
+        <text x="${x+w/2}" y="${Y(acc)-8}" text-anchor="middle" fill="var(--ink)" font-size="12" font-weight="600">${fr(acc)}%</text>
+        <text x="${x+w/2}" y="${Y1+20}" text-anchor="middle" fill="var(--muted)" font-size="11">bloco ${i+1}</text>`});
+  h+=`<line x1="${X0}" x2="${X1}" y1="${Y(LIVE.prova)}" y2="${Y(LIVE.prova)}" stroke="var(--gold-strong)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="${X1}" y="${Y(LIVE.prova)-6}" text-anchor="end" fill="var(--gold)" font-size="11" font-weight="600">provas ≈ 28%</text>
+      <line x1="${X0}" x2="${X1}" y1="${Y(LIVE.min)}" y2="${Y(LIVE.min)}" stroke="var(--loss)" stroke-width="2"/>
+      <text x="${X1}" y="${Y(LIVE.min)+15}" text-anchor="end" fill="var(--loss)" font-size="11" font-weight="600">mínimo 20%</text>
+      <line x1="${X0}" x2="${X1}" y1="${Y1}" y2="${Y1}" stroke="var(--line)"/>`;
+  $('#chartLive').innerHTML=h;
+  const act=$('#liveAction');
+  if(firstBad<0){act.className='note ok';act.innerHTML='<b>O app continua operando.</b> Todos os blocos estão acima do mínimo de 20%.'}
+  else{act.className='note err';act.innerHTML=`<b>No bloco ${firstBad+1} o acerto caiu abaixo do mínimo.</b> O app pausa a regra e refaz o estudo e a prova com os anos mais recentes. Se passar de novo, volta a operar. Se não, é descartada.`}
+  flash(act)}
+
+/* PASSO: LIMITES E OVERFITTING */
+const binom=(n,p)=>{let k=0;for(let i=0;i<n;i++)if(Math.random()<p)k++;return k};
+let hist=new Array(21).fill(0),lastBlk=-1;
+function simLuck(n){for(let i=0;i<n;i++){lastBlk=binom(20,.28);hist[lastBlk]++}renderLuck()}
+function renderLuck(){
+  const tot=hist.reduce((a,b)=>a+b,0),maxH=Math.max(1,...hist),X0=30,X1=620,Y0=16,Y1=160,K=15,bw=(X1-X0)/(K+1);
+  let h='';
+  for(let k=0;k<=K;k++){const v=hist[k]||0,x=X0+k*bw+3,w=bw-6,hh=v/maxH*(Y1-Y0),col=k<=3?'var(--loss)':'var(--win)';
+    h+=`<rect x="${x}" y="${Y1-hh}" width="${w}" height="${hh}" rx="4" fill="${col}" opacity="${k===lastBlk?1:.7}" ${k===lastBlk?'stroke="var(--gold-strong)" stroke-width="3"':''}/>
+        <text x="${x+w/2}" y="${Y1+16}" text-anchor="middle" fill="var(--muted)" font-size="11">${k}</text>`;
+    if(v)h+=`<text x="${x+w/2}" y="${Y1-hh-5}" text-anchor="middle" fill="var(--ink)" font-size="10">${v}</text>`}
+  h+=`<line x1="${X0}" x2="${X1}" y1="${Y1}" y2="${Y1}" stroke="var(--line)"/>
+      <text x="${(X0+X1)/2}" y="${Y1+34}" text-anchor="middle" fill="var(--muted)" font-size="11">alvos num bloco de 20 operações</text>`;
+  $('#chartLuck').innerHTML=h;
+  const low=hist.slice(0,4).reduce((a,b)=>a+b,0);
+  $('#luckTxt').innerHTML=tot?`<span class="num"><b>${tot}</b> blocos</span><span>· deram <b class="neg">3 alvos ou menos (15%)</b> em <b>${pct(low/tot)}</b> das vezes, mesmo com a regra boa.</span>${lastBlk>=0?`<span class="muted">· último bloco: ${lastBlk} alvos</span>`:''}`:'<span class="muted">Clique em simular.</span>'}
+$('#luck1').onclick=()=>simLuck(1);$('#luck200').onclick=()=>simLuck(200);$('#luck0').onclick=()=>{hist.fill(0);lastBlk=-1;renderLuck()};
+
+const SEM={a100:26,blk:6,seq:7,pior:12};
+[['sem100','a100'],['semBlk','blk'],['semSeq','seq']].forEach(([id,k])=>$('#'+id).addEventListener('input',e=>{SEM[k]=+e.target.value;renderSem()}));
+function renderSem(){
+  $('#sem100v').textContent=SEM.a100+'%';$('#semBlkv').textContent=`${SEM.blk} (${fr(SEM.blk/20*100)}%)`;$('#semSeqv').textContent=SEM.seq+' seguidos';
+  const red=SEM.a100<20||SEM.seq>SEM.pior,yel=!red&&(SEM.a100<24||SEM.blk<4),st=red?'r':yel?'y':'g';
+  ['g','y','r'].forEach(c=>$('#l'+c).classList.toggle('on',c===st));
+  const why=[];if(SEM.a100<20)why.push('últimas 100 abaixo de 20%');if(SEM.seq>SEM.pior)why.push(`${SEM.seq} stops seguidos, mais que os 12 das provas`);
+  if(!red){if(SEM.a100<24)why.push('últimas 100 entre 20% e 24%');if(SEM.blk<4)why.push('último bloco abaixo de 20%')}
+  $('#semTxt').innerHTML=st==='g'?'<b class="pos">Normal.</b> O app continua operando.':st==='y'?`<b class="gold">Atenção:</b> ${why.join(' e ')}. O app avisa você e continua.`:`<b class="neg">Pausa:</b> ${why.join(' e ')}. O app para, avisa e refaz estudo e prova.`;
+  flash($('#semTxt'))}
+
+let fake=[],manyN=100;
+function genFake(){fake=Array.from({length:1000},()=>binom(150,.2)/150)}
+$('#manyChips').innerHTML=[1,10,100,1000].map(n=>`<button class="chip" data-many="${n}">${nf(n,0,0)} ${n===1?'regra':'regras'}</button>`).join('');
+$$('[data-many]').forEach(b=>b.onclick=()=>{manyN=+b.dataset.many;renderMany()});
+$('#manyAgain').onclick=()=>{genFake();renderMany()};
+function renderMany(){
+  $$('[data-many]').forEach(b=>b.classList.toggle('on',+b.dataset.many===manyN));
+  const best=Math.max(...fake.slice(0,manyN));
+  const v=$('#manyBest');v.textContent=pct(best);v.className='v '+(best>.2?'gold':'');
+  $('#manyTxt').textContent=`melhor acerto entre ${nf(manyN,0,0)} ${manyN===1?'regra que não serve':'regras que não servem'} (mínimo 20%)`;flash(v)}
+
+/* PASSO: O MODELO */
+const MOD={p:31,lim:27,g:800,l:200,min:20,moments:[['A',12],['B',22],['C',31],['D',40]]};
+const mExp=p=>p/100*MOD.g-(100-p)/100*MOD.l;
+function mDecide(p){return p>=MOD.lim?['win','compra']:p>MOD.min?['even','não compra: folga pequena']:['loss','não compra: abaixo do mínimo']}
+$('#mdP').value=MOD.p;$('#mdL').value=MOD.lim;
+$('#mdP').addEventListener('input',e=>{MOD.p=+e.target.value;renderModel()});
+$('#mdL').addEventListener('input',e=>{MOD.lim=+e.target.value;renderModel()});
+function renderModel(){
+  const p=MOD.p,sc=60,e=mExp(p),[c,t]=mDecide(p);
+  $('#mdPv').textContent=p+'%';$('#mdLv').textContent=MOD.lim+'%';
+  $('#mdBar').style.width=(p/sc*100)+'%';
+  $('#mkMin').style.left=(MOD.min/sc*100)+'%';$('#mkLim').style.left=(MOD.lim/sc*100)+'%';$('#mkLimT').textContent='limite '+MOD.lim+'%';
+  $('#mkLimT').style.paddingBottom=Math.abs(MOD.lim-MOD.min)<6?'16px':'2px';
+  $('#mdCalc').innerHTML=`
+   <div class="ln"><span class="k">verdes colocam</span><span>${p}% × 800</span><span class="eq">=</span><span class="r pos">+${fr(p/100*MOD.g)}</span></div>
+   <div class="ln"><span class="k">vermelhas tiram</span><span>${100-p}% × 200</span><span class="eq">=</span><span class="r neg">−${fr((100-p)/100*MOD.l)}</span></div>
+   <div class="ln total"><span class="k">expectativa</span><span class="r ${e>0?'pos':e<0?'neg':''}">${fs(e)} por operação</span></div>`;
+  $('#mdDec').innerHTML=`<span class="pill ${c}">${t}</span>`;flash($('#mdDec'));
+  $('#mdTbl').innerHTML=`<thead><tr><th>Momento</th><th>Chance</th><th>Expectativa</th><th>Decisão</th></tr></thead><tbody>`+
+    MOD.moments.map(([n,q])=>{const ex=mExp(q),[cc,tt]=mDecide(q);return `<tr><td>${n}</td><td>${q}%</td><td class="${ex>0?'pos':ex<0?'neg':''}">${fr(q/100*MOD.g)} − ${fr((100-q)/100*MOD.l)} = ${fs(ex)}</td><td><span class="pill ${cc}">${tt}</span></td></tr>`}).join('')+'</tbody>'}
+function renderCalib(){
+  const X0=46,X1=300,Y0=14,Y1=214,m=50,X=v=>X0+v/m*(X1-X0),Y=v=>Y1-v/m*(Y1-Y0);
+  let h='';[0,10,20,30,40,50].forEach(t=>{h+=`<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${X0-6}" y="${Y(t)+4}" text-anchor="end" fill="var(--muted)" font-size="10">${t}%</text><text x="${X(t)}" y="${Y1+16}" text-anchor="middle" fill="var(--muted)" font-size="10">${t}%</text>`});
+  h+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(50)}" y2="${Y(50)}" stroke="var(--gold-strong)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="${(X0+X1)/2}" y="${Y1+36}" text-anchor="middle" fill="var(--muted)" font-size="11">o modelo disse</text>
+      <text x="12" y="${(Y0+Y1)/2}" text-anchor="middle" fill="var(--muted)" font-size="11" transform="rotate(-90 12 ${(Y0+Y1)/2})">aconteceu</text>`;
+  [[20,21,1],[30,29,1],[40,22,0]].forEach(([d,a,ok])=>{const col=ok?'var(--win)':'var(--loss)';
+    if(!ok)h+=`<line x1="${X(d)}" x2="${X(d)}" y1="${Y(d)}" y2="${Y(a)}" stroke="var(--loss)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+    h+=`<circle cx="${X(d)}" cy="${Y(a)}" r="7" fill="${col}" stroke="var(--surface)" stroke-width="2"/><text x="${X(d)+11}" y="${Y(a)+4}" fill="${col}" font-size="11" font-weight="600">${a}%</text>`});
+  $('#calibChart').innerHTML=h}
+
+/* PASSO: VAZAMENTO DO FUTURO */
+const CK=[{n:'Quedas seguidas até ontem',t:-6,h:'ontem 18:00'},{n:'Preço de abertura de hoje',t:9,h:'hoje 09:00'},{n:'Preço das 10h',t:10,h:'hoje 10:00'},{n:'Preço das 14h',t:14,h:'hoje 14:00'},{n:'Fechamento de hoje',t:18,h:'hoje 18:00'},{n:'Preço de amanhã',t:33,h:'amanhã'}];
+function renderClock(){const H=+$('#ckH').value;$('#ckHv').textContent=String(H).padStart(2,'0')+':00';
+  $('#clock').innerHTML=CK.map(c=>{const ok=c.t<=H;return `<div class="ck ${ok?'':'fut'}"><span class="h">${c.h}</span><span class="n">${c.n}</span>${ok?'<span class="pill win">pode entrar</span>':'<span class="pill loss">futuro: não pode</span>'}</div>`}).join('')}
+$('#ckH').addEventListener('input',renderClock);
+let leakOn=true;
+$('#leakChips').innerHTML='<button class="chip" data-leak="1">Ficha com vazamento</button><button class="chip" data-leak="0">Ficha honesta</button>';
+$$('[data-leak]').forEach(b=>b.onclick=()=>{leakOn=b.dataset.leak==='1';renderLeak()});
+function renderLeak(){$$('[data-leak]').forEach(b=>b.classList.toggle('on',(b.dataset.leak==='1')===leakOn));
+  const [e,l]=leakOn?[75,20]:[30,28];
+  $('#lkE').style.width=(e/80*100)+'%';$('#lkL').style.width=(l/80*100)+'%';$('#lkEv').textContent=e+'%';$('#lkLv').textContent=l+'%';
+  $('#leakTxt').innerHTML=leakOn?'<span class="pill loss">enganou</span><span>Ótimo no estudo, cai para o mínimo (20%) ao vivo: o futuro estava na ficha.</span>':'<span class="pill win">honesta</span><span>Estudo e ao vivo parecidos: a ficha só usa o que já se sabia.</span>';flash($('#leakTxt'))}
+
+/* PASSO: QUANTO ARRISCAR */
+const RK={p:1,n:12,c0:32000};
+$('#rkP').addEventListener('input',e=>{RK.p=+e.target.value;renderRisk()});
+$('#rkN').addEventListener('input',e=>{RK.n=+e.target.value;renderRisk()});
+const after=(p,n)=>RK.c0*Math.pow(1-p/100,n);
+function renderRisk(){
+  const {p,n,c0}=RK,fin=after(p,n),lost=1-fin/c0,rec=c0/fin-1;
+  $('#rkPv').textContent=fr(p)+'%';$('#rkNv').textContent=n;
+  const pts=Array.from({length:n+1},(_,k)=>after(p,k)),X0=64,X1=620,Y0=18,Y1=170,X=k=>X0+k/n*(X1-X0),Y=v=>Y1-v/c0*(Y1-Y0);
+  let h='';[0,8000,16000,24000,32000].forEach(t=>{h+=`<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${X0-8}" y="${Y(t)+4}" text-anchor="end" fill="var(--muted)" font-size="11">${fp(t)}</text>`});
+  const line=pts.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' '),col=lost>.3?'var(--loss)':lost>.15?'var(--gold-strong)':'var(--win)';
+  h+=`<polygon points="${X0},${Y1} ${line} ${X(n)},${Y1}" fill="${col}" opacity=".12"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  pts.forEach((v,k)=>{h+=`<circle cx="${X(k)}" cy="${Y(v)}" r="3" fill="${col}"/>`});
+  h+=`<text x="${X(n)}" y="${Y(fin)-10}" text-anchor="end" fill="${col}" font-size="12" font-weight="600">${fp(Math.round(fin))}</text>
+      <text x="${X0}" y="${Y1+22}" fill="var(--muted)" font-size="11">início</text><text x="${X1}" y="${Y1+22}" text-anchor="end" fill="var(--muted)" font-size="11">stop ${n}</text>`;
+  $('#rkChart').innerHTML=h;
+  $('#rkCalc').innerHTML=`
+   <div class="ln"><span class="k">conta no fim</span><span>32.000 × (1 − ${fr(p)}%) ${n>1?'× … ('+n+' vezes)':''}</span><span class="eq">=</span><span class="r ${lost>.3?'neg':''}">${fp(Math.round(fin))}</span></div>
+   <div class="ln"><span class="k">perdeu</span><span class="r neg">−${fr(lost*100)}%</span></div>
+   <div class="ln"><span class="k">para recuperar</span><span>precisa ganhar</span><span class="r gold">+${fr(rec*100)}%</span></div>`;flash($('#rkCalc'));
+  $('#rkTbl').innerHTML=`<thead><tr><th>Arrisca</th><th>Conta depois de ${n} stops</th><th>Perdeu</th><th>Para recuperar</th></tr></thead><tbody>`+
+    [1,2,5,10].map(q=>{const f=after(q,n);return `<tr class="${q===p?'hi':''}"><td>${q}%</td><td>${fp(Math.round(f))}</td><td class="neg">−${fr((1-f/c0)*100)}%</td><td>+${fr((c0/f-1)*100)}%</td></tr>`}).join('')+'</tbody>'}
+const CQ={c:32000,p:0.5,e:3200,s:3180};
+[['cqC','c'],['cqP','p'],['cqE','e'],['cqS','s']].forEach(([id,k])=>{const el=$('#'+id);el.value=fp(CQ[k]);
+  el.addEventListener('input',()=>{const n=parseNum(el.value);el.classList.toggle('bad',isNaN(n));if(!isNaN(n)){CQ[k]=n;renderCQ()}})});
+$('#cq20').onclick=()=>{CQ.s=3180;$('#cqS').value=fp(3180);renderCQ()};
+$('#cq40').onclick=()=>{CQ.s=3160;$('#cqS').value=fp(3160);renderCQ()};
+function renderCQ(){
+  $('#cq20').classList.toggle('on',CQ.s===3180&&CQ.e===3200);$('#cq40').classList.toggle('on',CQ.s===3160&&CQ.e===3200);
+  const el=$('#cqCalc');
+  if(!(CQ.s<CQ.e&&CQ.c>0&&CQ.p>0)){el.innerHTML='<div class="ln warn">Confira: stop abaixo da entrada, conta e porcentagem maiores que zero.</div>';return}
+  const risk=CQ.c*CQ.p/100,r1=CQ.e-CQ.s,raw=risk/r1,q=Math.floor(raw+1e-9);
+  el.innerHTML=`
+   <div class="ln"><span class="k">quanto arriscar</span><span>${fp(CQ.c)} × ${fr(CQ.p)}%</span><span class="eq">=</span><span class="r">${fp(risk)}</span></div>
+   <div class="ln"><span class="k">1R por cota</span><span>${fp(CQ.e)} − ${fp(CQ.s)}</span><span class="eq">=</span><span class="r neg">${fp(r1)}</span></div>
+   <div class="ln total"><span class="k">cotas</span><span>${fp(risk)} ÷ ${fp(r1)}</span><span class="eq">=</span><span class="r gold">${q} cotas</span>${Math.abs(raw-q)>1e-6?`<span class="eq">(${fr(raw)}, arredonda para baixo)</span>`:''}</div>
+   <div class="ln"><span class="k">se bater o stop</span><span>${q} × ${fp(r1)}</span><span class="eq">=</span><span class="r neg">−${fp(q*r1)}</span></div>`;flash(el)}
+
+/* PASSO: OS DADOS */
+const CD0={o:3165,h:3245,l:3135,c:3200},CD={...CD0},CDK={e:3160,s:3140,t:3240};
+const HOURS=[[3165,3168,3150,3152],[3152,3155,3135,3141],[3141,3170,3140,3168],[3168,3195,3165,3190],[3190,3220,3185,3215],[3215,3245,3210,3230],[3230,3232,3205,3210],[3210,3212,3195,3200]];
+[['cdO','o'],['cdH','h'],['cdL','l'],['cdC','c']].forEach(([id,k])=>{const el=$('#'+id);el.value=fp(CD[k]);
+  el.addEventListener('input',()=>{const n=parseNum(el.value);el.classList.toggle('bad',isNaN(n));if(!isNaN(n)){CD[k]=n;$('#cdHourWrap').hidden=true;renderCandle()}})});
+$('#cdHour').onclick=()=>{$('#cdHourWrap').hidden=false;renderHours()};
+$('#cdReset').onclick=()=>{Object.assign(CD,CD0);[['cdO','o'],['cdH','h'],['cdL','l'],['cdC','c']].forEach(([id,k])=>{$('#'+id).value=fp(CD[k]);$('#'+id).classList.remove('bad')});$('#cdHourWrap').hidden=true;renderCandle()};
+const cdLo=3100,cdHi=3280;
+function levels(svgW,Y,X0,X1){return `
+  <line x1="${X0}" x2="${X1}" y1="${Y(CDK.t)}" y2="${Y(CDK.t)}" stroke="var(--win)" stroke-width="2"/>
+  <line x1="${X0}" x2="${X1}" y1="${Y(CDK.e)}" y2="${Y(CDK.e)}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 5"/>
+  <line x1="${X0}" x2="${X1}" y1="${Y(CDK.s)}" y2="${Y(CDK.s)}" stroke="var(--loss)" stroke-width="2"/>
+  <text x="${X1+8}" y="${Y(CDK.t)+4}" fill="var(--win)" font-size="12" font-weight="600">alvo ${fp(CDK.t)}</text>
+  <text x="${X1+8}" y="${Y(CDK.e)+4}" fill="var(--muted)" font-size="12">entrada ${fp(CDK.e)}</text>
+  <text x="${X1+8}" y="${Y(CDK.s)+4}" fill="var(--loss)" font-size="12" font-weight="600">stop ${fp(CDK.s)}</text>`}
+function candle(x,w,o,h,l,c,Y,lab){const up=c>=o,col=up?'var(--win)':'var(--loss)',top=Y(Math.max(o,c)),bot=Y(Math.min(o,c));
+  return `<line x1="${x}" x2="${x}" y1="${Y(h)}" y2="${Y(l)}" stroke="var(--ink)" stroke-width="2"/>
+  <rect x="${x-w/2}" y="${top}" width="${w}" height="${Math.max(2,bot-top)}" rx="3" fill="${col}" stroke="var(--ink)" stroke-width="1.5"/>${lab||''}`}
+function renderCandle(){
+  const ok=CD.h>=Math.max(CD.o,CD.c)&&CD.l<=Math.min(CD.o,CD.c);
+  const lo=Math.min(cdLo,CD.l-10),hi=Math.max(cdHi,CD.h+10),Y=v=>240-(v-lo)/(hi-lo)*220,X0=40,X1=470,x=170;
+  let h=levels(640,Y,X0,X1);
+  if(ok){h+=candle(x,46,CD.o,CD.h,CD.l,CD.c,Y);
+    const lb=(v,t)=>`<line x1="${x+30}" x2="${x+60}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${x+66}" y="${Y(v)+4}" fill="var(--ink)" font-size="12">${t} ${fp(v)}</text>`;
+    h+=lb(CD.h,'máxima')+lb(CD.l,'mínima');
+    h+=`<text x="${x-34}" y="${Y(CD.o)+4}" text-anchor="end" fill="var(--muted)" font-size="11">abertura ${fp(CD.o)}</text>
+        <text x="${x-34}" y="${Y(CD.c)+(Math.abs(CD.c-CD.o)<12?16:4)}" text-anchor="end" fill="var(--muted)" font-size="11">fechamento ${fp(CD.c)}</text>`}
+  $('#cdChart').innerHTML=h;
+  const tA=CD.h>=CDK.t,tS=CD.l<=CDK.s,el=$('#cdTxt');
+  $('#cdHour').hidden=!(tA&&tS&&CD.o===CD0.o&&CD.h===CD0.h&&CD.l===CD0.l&&CD.c===CD0.c);
+  if(!ok)el.innerHTML='<span class="warn">A máxima precisa ser o maior número e a mínima o menor.</span>';
+  else if(tA&&tS)el.innerHTML='<span class="pill even">tocou os dois</span><span>A máxima passou do alvo <b>e</b> a mínima passou do stop. Qual veio primeiro? Com o candle do dia, não dá para saber.</span>';
+  else if(tA)el.innerHTML='<span class="pill win">alvo</span><span>Só a máxima passou do alvo: <b class="pos">+800</b>.</span>';
+  else if(tS)el.innerHTML='<span class="pill loss">stop</span><span>Só a mínima passou do stop: <b class="neg">−200</b>.</span>';
+  else el.innerHTML='<span class="pill even">nenhum</span><span>Não tocou stop nem alvo: a operação continua aberta.</span>';
+  flash(el)}
+function renderHours(){
+  const Y=v=>220-(v-cdLo)/(cdHi-cdLo)*200,X0=40,X1=470,n=HOURS.length,bw=(X1-X0)/n;
+  let h=levels(640,Y,X0,X1);
+  HOURS.forEach(([o,hh,l,c],i)=>{const x=X0+bw*i+bw/2;h+=candle(x,bw*.5,o,hh,l,c,Y,`<text x="${x}" y="236" text-anchor="middle" fill="var(--muted)" font-size="11">h${i+1}</text>`)});
+  const x2=X0+bw*1.5,x6=X0+bw*5.5;
+  h+=`<circle cx="${x2}" cy="${Y(3135)}" r="9" fill="none" stroke="var(--loss)" stroke-width="2.5"/>
+      <circle cx="${x6}" cy="${Y(3245)}" r="9" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 3"/>`;
+  $('#cdHourChart').innerHTML=h}
+const SP={mode:'longa',v:0.3,base:{longa:100,curta:4}};
+$('#spChips').innerHTML='<button class="chip" data-sp="longa">Operação longa (alvo +800)</button><button class="chip" data-sp="curta">Operação curta (alvo +40)</button>';
+$$('[data-sp]').forEach(b=>b.onclick=()=>{SP.mode=b.dataset.sp;renderSpread()});
+$('#spV').addEventListener('input',e=>{SP.v=+e.target.value;renderSpread()});
+function renderSpread(){$$('[data-sp]').forEach(b=>b.classList.toggle('on',b.dataset.sp===SP.mode));
+  const base=SP.base[SP.mode],cost=SP.v*10,net=base-cost;
+  $('#spVv').textContent=nf(SP.v,2,2);
+  $('#spCalc').innerHTML=`
+   <div class="ln"><span class="k">expectativa sem custo</span><span class="r pos">${fs(base)}</span><span class="eq">${SP.mode==='curta'?'(40% × 40 − 60% × 20)':'(o exemplo de antes)'}</span></div>
+   <div class="ln"><span class="k">custo por operação</span><span>${nf(SP.v,2,2)} × 10 cotas</span><span class="eq">=</span><span class="r neg">−${fr(cost)}</span></div>
+   <div class="ln total"><span class="k">expectativa com custo</span><span>${fs(base)} − ${fr(cost)}</span><span class="eq">=</span><span class="r ${net>0?'pos':net<0?'neg':''}">${fs(net)}</span></div>`;
+  const eaten=Math.min(1,cost/base);
+  $('#spTxt').innerHTML=net>0?`<span class="pill ${eaten>.5?'even':'win'}">o custo come ${fr(eaten*100)}% do lucro</span>`:`<span class="pill loss">o custo comeu todo o lucro</span>`;flash($('#spCalc'))}
+
+/* PASSO: MONTANDO O APP */
+const PIECES=[
+ {n:'Coletor',t:'Baixa o histórico e os preços ao vivo do MT5 e confere a qualidade.',go:[['dados','Os dados']]},
+ {n:'Laboratório',t:'Monta as fichas e testa regras e o modelo: estudo, prova, cofre, vazamento, overfitting.',go:[['regra','A regra'],['prova','Aprendeu ou decorou'],['modelo','O modelo'],['vazamento','Vazamento'],['limites','Limites']]},
+ {n:'Vigia',t:'Ao vivo, monta a ficha do momento, pede a chance ao modelo e decide se compra.',go:[['modelo','O modelo']]},
+ {n:'Executor',t:'Calcula as cotas e manda a ordem para a corretora, com stop e alvo.',go:[['risco','Quanto arriscar'],['stop-alvo','Stop e alvo']]},
+ {n:'Painel e avisos',t:'Mostra conta, acerto e semáforo, e manda mensagem no celular.',go:[['ao-vivo','Ao vivo'],['limites','Limites']]}];
+let pieceSel=0;
+$('#pieces').innerHTML=PIECES.map((p,i)=>`<button class="piece" data-piece="${i}"><span>${i+1}</span><b>${p.n}</b></button>`).join('');
+$$('[data-piece]').forEach(b=>b.onclick=()=>{pieceSel=+b.dataset.piece;renderPieces()});
+function renderPieces(){$$('[data-piece]').forEach(b=>b.classList.toggle('on',+b.dataset.piece===pieceSel));
+  const p=PIECES[pieceSel];
+  $('#pieceInfo').innerHTML=`<b>${p.n}:</b> ${p.t}<div class="chips" style="margin-top:10px">${p.go.map(([s,l])=>`<button class="chip" data-goto="${s}">Rever: ${l}</button>`).join('')}</div>`;
+  $$('[data-goto]').forEach(b=>b.onclick=()=>go(steps.findIndex(s=>s.dataset.step===b.dataset.goto),true));flash($('#pieceInfo'))}
+let flRunning=null;
+$('#flP').addEventListener('input',()=>{clearTimeout(flRunning);renderFlow(-1)});
+$('#flRun').onclick=()=>{clearTimeout(flRunning);let k=0;const tick=()=>{renderFlow(k);k++;if(k<5)flRunning=setTimeout(tick,reduce?0:650)};tick()};
+function renderFlow(active){
+  const p=+$('#flP').value,buy=p>=27,risk=160,q=8;
+  $('#flPv').textContent=p+'%';
+  const S5=[
+   ['Coletor','Preço novo chegou: 3.200, hoje às 10:00.',true],
+   ['Vigia',`Monta a ficha só com o que já se sabe. Chance do modelo: <b>${p}%</b>. Passou do limite de 27%? <b class="${buy?'pos':'neg'}">${buy?'sim':'não'}</b>.`,true],
+   ['Executor',buy?`32.000 × 0,5% = ${risk} → ${risk} ÷ 20 = ${q} cotas. Manda: compra ${q} cotas a 3.200, stop 3.180, alvo 3.280.`:'Não manda nada. Espera o próximo preço.',buy],
+   ['Corretora',buy?'Vigia stop e alvo e fecha sozinha.':'Nenhuma operação aberta.',buy],
+   ['Painel',buy?'Registra o resultado, atualiza acerto e semáforo: 🟢 continua · 🟡 avisa · 🔴 pausa e avisa.':'Registra: momento sem compra.',true]];
+  $('#pipe').innerHTML=S5.map(([n,t,on],i)=>`${i?'<div class="arrow">↓</div>':''}<div class="stg ${i===active?'on':''} ${on?'':'skip'}"><span class="n">${i+1}</span><div><b>${n}</b><p>${t}</p></div></div>`).join('')}
+
+/* inicialização */
+function renderAll(){drawChart1(lastPath);resRender(lastPath);renderStep2();renderStep3();renderStep4()}
+syncPriceInputs();setupNow();renderAll();renderStep6();renderRule();renderWF();renderLive();simLuck(200);renderSem();genFake();renderMany();renderModel();renderCalib();renderClock();renderLeak();renderRisk();renderCQ();renderCandle();renderSpread();renderPieces();renderFlow(-1);fromHash();
+})();
+</script>
