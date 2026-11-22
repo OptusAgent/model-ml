@@ -1,9 +1,10 @@
-// Operar: o gráfico no centro. Em cima, o dinheiro (saldo, operação aberta com a régua do stop ao alvo,
-// resultado de hoje) e o vigia. Do lado, o sinal e a ordem manual. Embaixo, a conversa com o MT5 recolhida.
+// Operar: o gráfico na largura toda. Em cima, o dinheiro (saldo, operação aberta com a régua do stop ao
+// alvo, resultado de hoje) e o vigia. Vender/Comprar no cabeçalho do gráfico, como o clique rápido do MT5.
+// O sinal aparece dentro do gráfico só quando existe. Embaixo, ordem manual e conversa com o MT5 recolhidas.
 import { SYMBOLS, SYMBOL_IDS } from '../market.js';
 import { fmt } from '../util.js';
 import { icon } from '../icons.js';
-import { $, px, REGIME_PILL, symIcon, createCandleChart, signalCardHTML, bindSignalActions } from '../ui.js';
+import { $, px, REGIME_PILL, symIcon, createCandleChart, chanceBar, contribHTML, bindSignalActions } from '../ui.js';
 
 const TFS = [[1, 'M1'], [2, 'M2'], [5, 'M5'], [15, 'M15'], [60, 'H1']];
 const SEM = { verde: ['green', 'Semáforo verde'], amarelo: ['amber', 'Semáforo amarelo'], vermelho: ['red', 'Semáforo vermelho'] };
@@ -11,7 +12,7 @@ const SEM = { verde: ['green', 'Semáforo verde'], amarelo: ['amber', 'Semáforo
 export default {
   title: 'Operar',
   render(root, { engine, toast, params, go }) {
-    let sym = SYMBOLS[params.sym] ? params.sym : 'XAUUSD', tf = 5, raf = 0, lastBal = null;
+    let sym = SYMBOLS[params.sym] ? params.sym : 'XAUUSD', tf = 5, raf = 0, lastBal = null, sigMin = false;
     root.innerHTML = `
       <div class="op">
         <section class="op-strip" aria-label="Sua conta">
@@ -21,40 +22,36 @@ export default {
           <div class="tile" id="kVig"></div>
         </section>
         <div id="oAttn"></div>
-        <section class="op-main">
-          <div class="card op-chart">
-            <div class="op-chart-h">
-              <div class="op-sym"><span id="oIc"></span><div><span class="op-name" id="oName"></span><div class="op-px"><b class="num" id="oPx"></b><span id="oReg"></span></div></div></div>
-              <div class="op-ctrl"><div class="seg" id="oSym">${SYMBOL_IDS.map((s) => `<button data-s="${s}">${s}</button>`).join('')}</div><div class="seg" id="oTf">${TFS.map(([v, l]) => `<button data-tf="${v}">${l}</button>`).join('')}</div></div>
+        <section class="card op-chart">
+          <div class="op-chart-h">
+            <div class="op-sym"><span id="oIc"></span><div><span class="op-name" id="oName"></span><div class="op-px"><b class="num" id="oPx"></b><span id="oReg"></span></div></div></div>
+            <div class="op-ctrl"><div class="seg" id="oSym">${SYMBOL_IDS.map((s) => `<button data-s="${s}">${s}</button>`).join('')}</div><div class="seg" id="oTf">${TFS.map(([v, l]) => `<button data-tf="${v}">${l}</button>`).join('')}</div></div>
+            <div class="op-bs" title="Ordem a mercado com o volume, o stop e o alvo de baixo">
+              <button class="btn btn-sell" id="tSell"><span>Vender</span><span class="num" id="tBid"></span></button>
+              <button class="btn btn-buy" id="tBuy"><span>Comprar</span><span class="num" id="tAsk"></span></button>
             </div>
-            <div class="chart-box op-chart-box" id="oChart"></div>
           </div>
-          <aside class="op-rail">
-            <div id="oSig"></div>
-            <div class="card op-order">
-              <div class="op-order-h"><b>Ordem manual</b><span class="muted" id="tSum"></span></div>
-              <div class="op-bs">
-                <button class="btn btn-sell" id="tSell"><span>Vender</span><span class="num" id="tBid"></span></button>
-                <button class="btn btn-buy" id="tBuy"><span>Comprar</span><span class="num" id="tAsk"></span></button>
-              </div>
-              <details class="op-adj">
-                <summary>Ajustar volume, stop e alvo</summary>
-                <div class="fields">
-                  <div class="field"><label for="tVol">Volume (lotes)</label><input class="input" id="tVol" inputmode="decimal" value="0,10"></div>
-                  <div class="field"><label for="tRisk">Arriscar (% da conta)</label><input class="input" id="tRisk" inputmode="decimal" value="0,5"></div>
-                  <div class="field"><label for="tSl">Stop Loss</label><input class="input" id="tSl" inputmode="decimal"></div>
-                  <div class="field"><label for="tTp">Take Profit</label><input class="input" id="tTp" inputmode="decimal"></div>
-                </div>
-                <button class="btn btn-ghost btn-sm" id="tCalc">${icon('target', 14)} Calcular o volume pelo risco</button>
-                <div class="muted op-info" id="tInfo"></div>
-              </details>
-            </div>
-          </aside>
+          <div class="op-chart-wrap">
+            <div class="chart-box op-chart-box" id="oChart"></div>
+            <div class="op-sig" id="oSig"></div>
+          </div>
         </section>
-        <details class="card op-log">
-          <summary>${icon('plug', 15)}<b>Conversa com o MT5</b><span class="muted" id="oLogLast"></span></summary>
-          <div class="log" id="oLog"></div>
-        </details>
+        <section class="op-bottom">
+          <details class="card op-adj">
+            <summary>${icon('target', 15)}<b>Ordem manual</b><span class="muted" id="tSum"></span></summary>
+            <div class="fields">
+              <div class="field"><label for="tVol">Volume (lotes)</label><input class="input" id="tVol" inputmode="decimal" value="0,10"></div>
+              <div class="field"><label for="tRisk">Arriscar (% da conta)</label><input class="input" id="tRisk" inputmode="decimal" value="0,5"></div>
+              <div class="field"><label for="tSl">Stop Loss</label><input class="input" id="tSl" inputmode="decimal"></div>
+              <div class="field"><label for="tTp">Take Profit</label><input class="input" id="tTp" inputmode="decimal"></div>
+            </div>
+            <div class="op-adj-f"><button class="btn btn-ghost btn-sm" id="tCalc">${icon('target', 14)} Calcular o volume pelo risco</button><div class="muted op-info" id="tInfo"></div></div>
+          </details>
+          <details class="card op-log">
+            <summary>${icon('plug', 15)}<b>Conversa com o MT5</b><span class="muted" id="oLogLast"></span></summary>
+            <div class="log" id="oLog"></div>
+          </details>
+        </section>
       </div>`;
 
     const chart = createCandleChart($('#oChart', root), engine, { sym, tf });
@@ -170,13 +167,38 @@ export default {
       $('#tBid', root).textContent = px(sym, p.bid);
       $('#tAsk', root).textContent = px(sym, p.ask);
     }
+    // Cartão do sinal dentro do gráfico. Some quando não há sinal aberto; pode ser minimizado.
     function sig() {
-      const open = engine.signals.find((x) => x.sym === sym && (x.status === 'novo' || x.status === 'enviando'));
-      if (open) { $('#oSig', root).innerHTML = signalCardHTML(open, engine, false); return; }
-      const last = engine.signals.find((x) => x.sym === sym);
-      const note = !last ? '' : `<span class="rail-last">Último sinal ${last.id}: ${last.status === 'executado' ? `<b class="pos">executado</b> · ticket ${last.result?.order || ''}` : last.status === 'recusado' ? 'recusado pela corretora' : last.status === 'expirado' ? 'expirou sem execução' : 'ignorado'}</span>`;
-      $('#oSig', root).innerHTML = `<div class="card rail-idle"><div class="rail-idle-h"><span class="pulse"></span><b>Nenhum sinal agora</b></div><span class="muted">O modelo avisa aqui quando a chance de bater o alvo passa de ${fmt.pct(engine.settings.limiar, 0)}.</span>${note}</div>`;
+      const s = engine.signals.find((x) => x.sym === sym && (x.status === 'novo' || x.status === 'enviando'));
+      const box = $('#oSig', root);
+      if (!s) { box.innerHTML = ''; box.hidden = true; sigMin = false; return; }
+      box.hidden = false;
+      const buy = s.side > 0, set = engine.settings;
+      const tag = s.scenario ? '<span class="pill violet">cenário de apresentação</span>' : s.demo ? '<span class="pill amber">demonstração</span>' : '';
+      if (sigMin) {
+        box.className = 'op-sig min';
+        box.innerHTML = `<button class="op-sig-pill ${buy ? 'buy' : 'sell'}" data-sigmin>${icon('zap', 14)} Sinal ${s.id} · ${buy ? 'COMPRAR' : 'VENDER'} · ${fmt.pct(s.p, 0)}</button>`;
+        return;
+      }
+      const left = isFinite(s.expiresAt) ? `<span class="muted">válido por mais ${Math.max(0, Math.ceil((s.expiresAt - engine.now()) / 60))} min</span>` : '';
+      box.className = `op-sig ${buy ? 'buy' : 'sell'}`;
+      box.innerHTML = `
+        <div class="op-sig-h"><span class="pill ${buy ? 'green' : 'red'}">${icon('zap', 12)} Sinal ${s.id}</span>${tag}<button class="op-sig-x" data-sigmin aria-label="Minimizar o sinal" title="Minimizar">−</button></div>
+        <div class="op-sig-t"><b class="${buy ? 'pos' : 'neg'}">${buy ? 'COMPRAR' : 'VENDER'} ${s.sym}</b><span>${fmt.lots(s.lots)} lote</span></div>
+        ${chanceBar(s.p, set.limiar)}
+        <div class="op-sig-kv">
+          <div><small>Entrada</small><b>${px(s.sym, s.entry)}</b></div>
+          <div><small>Stop</small><b class="neg">${px(s.sym, s.sl)}</b></div>
+          <div><small>Alvo</small><b class="pos">${px(s.sym, s.tp)}</b></div>
+        </div>
+        <div class="op-sig-kv two">
+          <div><small>Arrisca (1R)</small><b>${fmt.usd(s.riskUsd)}</b></div>
+          <div><small>Ganha no alvo</small><b class="pos">${fmt.usd(s.targetUsd)}</b></div>
+        </div>
+        ${s.status === 'novo' ? `<div class="op-sig-b"><button class="btn ${buy ? 'btn-buy' : 'btn-sell'}" data-act="exec" data-id="${s.id}">${icon('send', 15)} ${buy ? 'Comprar' : 'Vender'} no MT5</button><button class="btn btn-ghost" data-act="dismiss" data-id="${s.id}">Ignorar</button></div>${left}` : '<span class="pill blue">Enviando ao MT5…</span>'}
+        <details class="op-sig-why"><summary>Por que o modelo deu esse sinal?</summary>${contribHTML(s.contrib)}</details>`;
     }
+    root.addEventListener('click', (e) => { if (e.target.closest('[data-sigmin]')) { sigMin = !sigMin; sig(); } });
     function log() {
       const L = engine.broker.log;
       const cls = (e) => (e.kind === 'ok' ? 'pos' : e.kind === 'err' ? 'neg' : 'blue');
@@ -189,7 +211,7 @@ export default {
     seg(); live(); sig(); log(); money();
     let n = 0;
     const offs = [
-      engine.bus.on('tick', (t) => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; live(); position(); vigia(); if (++n % 6 === 0) sig(); }); }),
+      engine.bus.on('tick', (t) => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; live(); position(); vigia(); if (++n % 6 === 0 && !root.querySelector('.op-sig-why[open]')) sig(); }); }),
       engine.bus.on('signal', sig), engine.bus.on('signalUpdate', sig), engine.bus.on('decision', live), engine.bus.on('mt5log', log),
       engine.bus.on('positions', money), engine.bus.on('closed', money), engine.bus.on('attention', money), engine.bus.on('lab', money),
     ];

@@ -45,8 +45,8 @@ function go(id) { location.hash = '#/' + id; }
 
 function renderSidebar() {
   $('#sidebar').innerHTML = `
-    <div class="brand"><div class="brand-logo">${icon('chart', 18, 'stroke="#fff"')}</div><div><b>Sinal Lab</b><small>protótipo · dados simulados</small></div></div>
-    ${NAV.map((g) => `<div class="nav-sec">${g.sec}</div><nav class="nav">${g.items.map(([id, label, ic]) => `<a href="#/${id}" data-nav="${id}">${icon(ic, 18)}<span>${label}</span>${id === 'painel' ? '<span class="badge" data-sigbadge hidden>0</span>' : ''}</a>`).join('')}</nav>`).join('')}
+    <div class="brand"><div class="brand-logo">${icon('chart', 18, 'stroke="#fff"')}</div><div class="brand-txt"><b>Sinal Lab</b><small>protótipo · dados simulados</small></div><button class="side-toggle" id="sideToggle" type="button" aria-label="Abrir ou recolher o menu" title="Abrir ou recolher o menu">${icon('menu', 16)}</button></div>
+    ${NAV.map((g) => `<div class="nav-sec">${g.sec}</div><nav class="nav">${g.items.map(([id, label, ic]) => `<a href="#/${id}" data-nav="${id}" title="${label}">${icon(ic, 18)}<span>${label}</span>${id === 'painel' ? '<span class="badge" data-sigbadge hidden>0</span>' : ''}</a>`).join('')}</nav>`).join('')}
     <div class="side-card">
       <div class="ic-box">${icon('book', 16, 'stroke="#fff"')}</div>
       <b>Modo apresentação</b>
@@ -54,6 +54,10 @@ function renderSidebar() {
       <a class="btn btn-glass btn-block btn-sm" href="#/guia">${icon('play', 14)} Abrir o roteiro</a>
     </div>`;
 }
+
+// Na tela Operar o menu vira uma faixa de ícones, para o gráfico ganhar largura. O botão ☰ abre e recolhe.
+let menuOpen = false;
+function syncMenu() { $('#app').classList.toggle('narrow', current === 'operar' && !menuOpen); }
 
 function renderTabbar() {
   $('#tabbar').innerHTML = TABS.map(([id, label, ic]) => `<a href="#/${id}" data-nav="${id}">${icon(ic, 20)}<span>${label}</span>${id === 'painel' ? '<span class="badge" data-sigbadge hidden>0</span>' : ''}</a>`).join('') +
@@ -149,7 +153,9 @@ function route() {
   const name = VIEWS[id] ? id : 'painel';
   const params = Object.fromEntries(new URLSearchParams(q || ''));
   if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
+  if (current !== name) menuOpen = false;
   current = name;
+  syncMenu();
   const view = VIEWS[name];
   $('#pageTitle').textContent = view.title;
   document.title = view.title + ' · Sinal Lab';
@@ -163,6 +169,7 @@ function route() {
 
 function boot() {
   renderSidebar();
+  $('#sideToggle').onclick = () => { menuOpen = !menuOpen; if (current !== 'operar') menuOpen = false; syncMenu(); };
   renderTopbar();
   renderTabbar();
   engine.bus.on('clock', (t) => { const c = $('#simClock'); if (c) c.textContent = fmt.time(t); });
@@ -170,14 +177,16 @@ function boot() {
   engine.bus.on('settings', syncSpeed);
   engine.bus.on('signal', (s) => {
     updateBadges();
-    if (!s) return;
-    if (engine.settings.notify.app) {
+    if (!s || !engine.settings.notify.app) return;
+    // Se a tela Operar já mostra o sinal dentro do gráfico, não repete o aviso flutuante.
+    setTimeout(() => {
+      if (document.querySelector(`#oSig [data-id="${s.id}"]`)) return;
       const t = toast(`${s.side > 0 ? 'COMPRAR' : 'VENDER'} ${s.sym} · chance ${(s.p * 100).toFixed(0)}% · ${fmt.lots(s.lots)} lote`, s.side > 0 ? 'buy' : 'sell', [
         { label: (s.side > 0 ? 'Comprar' : 'Vender') + ' no MT5', cls: s.side > 0 ? 'btn-buy' : 'btn-sell', fn: async () => { const r = await engine.execute(s.id); if (r) toast(r.retcode === 10009 ? `Executado · ticket ${r.order}` : `Recusado: ${r.comment}`, r.retcode === 10009 ? 'ok' : 'err'); } },
         { label: 'Ver no gráfico', fn: () => go('operar?sym=' + s.sym) },
       ]);
       t.dataset.sig = s.id;
-    }
+    }, 0);
   });
   // Quando o sinal é executado, ignorado ou expira, o aviso flutuante some.
   engine.bus.on('signalUpdate', (s) => {
