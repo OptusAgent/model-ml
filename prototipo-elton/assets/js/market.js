@@ -59,8 +59,22 @@ export class Feed {
     this.volMult = Math.min(1.6, Math.max(0.65, this.volMult + (this.r() - 0.5) * 0.04));
   }
 
+  // Roteiro de preço para os cenários de apresentação: segura o preço parado (hold) ou leva até
+  // pontos definidos (legs: [{ to, left }]), com um pouco de ruído para parecer mercado.
+  setGuide(g) { this.guide = g; }
+
+  _guided(v) {
+    const g = this.guide, dt = 1 / SUBSTEPS;
+    if (g.hold !== undefined) { this.p += (g.hold - this.p) * 0.2 + v * 0.22 * gauss(this.r) * Math.sqrt(dt); return; }
+    const leg = g.legs[0];
+    this.p += (leg.to - this.p) / Math.max(1, leg.left) + v * 0.3 * gauss(this.r) * Math.sqrt(dt);
+    if (--leg.left <= 0) g.legs.shift();
+    if (!g.legs.length) this.guide = { hold: this.p };
+  }
+
   _advance() {
     const v = this.sym.vol * this.volMult;
+    if (this.guide) return this._guided(v);
     let drift = 0;
     const E = this.sym.edge;
     if (this.regime === 'alta') drift = E.drift * v;

@@ -55,6 +55,7 @@ export function createEngine() {
     news.push({ ...ev, id: 'n' + k, time: t0 + (35 + k * 95) * 60 });
   }
   let timer = null, paused = false, sigSeq = 1;
+  let scen = null, attention = null; // cenário de apresentação em andamento e aviso de atenção
   let startBalance = broker.account.balance;
 
   const now = () => feeds.XAUUSD.now;
@@ -123,6 +124,7 @@ export function createEngine() {
     if (n >= 30 && acerto < minAcerto) reasons.push(`acerto das últimas ${n} operações (${(acerto * 100).toFixed(0)}%) abaixo do mínimo (${(minAcerto * 100).toFixed(0)}%)`);
     if (reasons.length) state = 'vermelho';
     else {
+      if (attention) reasons.push(attention);
       if (dd * 100 >= settings.maxDD * 0.5) reasons.push(`a conta caiu ${(dd * 100).toFixed(1)}%, metade do limite`);
       if (seqNow >= Math.ceil(worst * 0.6)) reasons.push(`${seqNow} stops seguidos (atenção a partir de ${Math.ceil(worst * 0.6)})`);
       if (n >= 20 && acerto < provaAcerto - 0.05) reasons.push(`acerto ao vivo (${(acerto * 100).toFixed(0)}%) abaixo das provas (${(provaAcerto * 100).toFixed(0)}%)`);
@@ -201,6 +203,7 @@ export function createEngine() {
     if (signals.length > 100) signals.pop();
     bus.emit('signal', sig);
     if (settings.execMode === 'auto' && broker.account.trade_mode === 'DEMO' && !demo) execute(sig.id, true);
+    return sig;
   }
 
   // Para a apresentação: cria um sinal agora com a leitura atual do modelo, ignorando os filtros.
@@ -230,8 +233,55 @@ export function createEngine() {
     sig.status = res.retcode === RETCODE.DONE ? 'executado' : 'recusado';
     sig.result = res;
     bus.emit('signalUpdate', sig);
+    if (scen && scen.sigId === sig.id) {
+      if (res.retcode === RETCODE.DONE) scenarioMove(sig, res.price);
+      else endScenario();
+    }
     return res;
   }
+
+  // ---------- Cenários de apresentação ----------
+  // Criam um sinal de compra no ouro e, depois que o Elton aperta o botão, levam o preço até o
+  // alvo (kind 'win') ou até o stop (kind 'loss'). Sempre levam uns 30 segundos, em qualquer velocidade.
+  function scenario(kind) {
+    const sym = 'XAUUSD', f = feeds[sym];
+    if (scen || broker.positions.some((x) => x.symbol === sym) || signals.some((s) => s.sym === sym && (s.status === 'novo' || s.status === 'enviando'))) return null;
+    const m5 = aggregate(f.m1, 5);
+    const ft = featureAt(m5, indicators(m5), m5.length - 1, sym);
+    if (!ft) return null;
+    f.setGuide({ hold: f.bid });
+    const sig = createSignal(sym, { ...ft, side: 1, regime: 'alta' }, kind === 'win' ? 0.62 : 0.56, now(), true);
+    sig.scenario = kind;
+    sig.expiresAt = Infinity;
+    scen = { kind, sym, sigId: sig.id, prevSpeed: settings.speed };
+    if (settings.speed !== 60) setSpeed(60);
+    bus.emit('signalUpdate', sig);
+    return sig;
+  }
+  function scenarioMove(sig, entry) {
+    const d = sig.dist, pos = broker.positions.find((x) => x.signalId === sig.id);
+    const tp = pos ? pos.tp : entry + sig.R * d, sl = pos ? pos.sl : entry - d;
+    const legs = scen.kind === 'win'
+      ? [{ to: entry - 0.4 * d, left: 36 }, { to: entry + 1.1 * d, left: 50 }, { to: entry + 0.7 * d, left: 20 }, { to: tp + 0.25 * d, left: 80 }]
+      : [{ to: entry + 0.9 * d, left: 45 }, { to: entry + 0.4 * d, left: 22 }, { to: entry + 1.0 * d, left: 22 }, { to: sl - 0.3 * d, left: 80 }];
+    feeds[sig.sym].setGuide({ legs });
+  }
+  function endScenario() {
+    if (!scen) return;
+    feeds[scen.sym].setGuide(null);
+    if (settings.speed !== scen.prevSpeed) setSpeed(scen.prevSpeed);
+    scen = null;
+  }
+  bus.on('closed', (d) => {
+    if (!scen || !d || d.signalId !== scen.sigId) return;
+    const kind = scen.kind;
+    endScenario();
+    if (kind === 'loss') {
+      attention = 'os últimos sinais acertaram menos do que o laboratório provou (cenário de apresentação)';
+      bus.emit('attention', attention);
+    }
+  });
+  bus.on('signalUpdate', (s) => { if (scen && s && s.id === scen.sigId && (s.status === 'ignorado' || s.status === 'expirado')) endScenario(); });
 
   function dismiss(id) {
     const sig = signals.find((s) => s.id === id);
@@ -318,6 +368,9 @@ export function createEngine() {
     equity.length = 0;
     equity.push({ time: now(), balance: startBalance });
     signals.length = 0;
+    endScenario();
+    attention = null;
+    bus.emit('attention', null);
     broker._log('req', 'Conta demo reiniciada em US$ 32.000,00');
     bus.emit('positions', broker.positions);
     bus.emit('closed', null);
@@ -328,7 +381,9 @@ export function createEngine() {
     bus, settings, feeds, broker, labs, signals, decisions, live, equity, news, t0,
     now, priceOf, sessionOf, signalsToday, getBars, dayChange, upcomingNews, newsAt, semaphore, report,
     execute, dismiss, placeOrder, demoSignal, setSpeed, setSettings, trainAll, retrain,
-    stressLosses, stressBigLoss, resetAccount,
+    stressLosses, stressBigLoss, resetAccount, scenario,
+    get scenarioOn() { return scen; },
+    get attention() { return attention; },
     pause(v) { paused = v; bus.emit('paused', paused); },
     get paused() { return paused; },
     start() { setSpeed(settings.speed); },

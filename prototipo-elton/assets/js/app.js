@@ -82,17 +82,47 @@ function renderTopbar() {
     <div class="clock" title="Relógio do mercado simulado (UTC)">${icon('clock', 14)}<span class="num" id="simClock">--:--</span><span class="muted hide-m">UTC</span></div>
     <button class="icon-btn" id="pauseBtn" aria-label="Pausar ou continuar o mercado">${icon('pause', 16)}</button>
     <div class="speed hide-m" id="speedSeg">${SPEEDS.map((s) => `<button data-speed="${s.v}">${s.label}</button>`).join('')}</div>
+    <button class="icon-btn" id="scenBtn" aria-label="Cenários de apresentação" title="Cenários de apresentação (teclas 1, 2 e 0)">${icon('play', 16)}</button>
     <button class="icon-btn" id="bellBtn" aria-label="Notificações">${icon('bell', 17)}<span class="dot" id="bellDot" hidden></span></button>
     <div class="user hide-m"><div class="avatar">ES</div><div><b>Elton Silva</b><small>conta 5823190 · demo</small></div></div>`;
   $('#pauseBtn').onclick = () => engine.pause(!engine.paused);
   $$('#speedSeg [data-speed]').forEach((b) => (b.onclick = () => engine.setSpeed(+b.dataset.speed)));
   $('#bellBtn').onclick = toggleBell;
+  $('#scenBtn').onclick = toggleScenarios;
   syncSpeed();
 }
 
 function syncSpeed() {
   $$('#speedSeg [data-speed]').forEach((b) => b.classList.toggle('on', +b.dataset.speed === engine.settings.speed));
 }
+
+// Cenários prontos para a reunião: o sinal aparece na tela Operar e o preço vai até o alvo ou o stop.
+const SCENARIOS = [
+  ['1', 'win', 'Sinal que dá certo', 'compra no ouro que bate o alvo de 3R'],
+  ['2', 'loss', 'Sinal que dá errado', 'bate o stop e o app avisa que o modelo precisa de atenção'],
+  ['0', 'reset', 'Reiniciar a conta demo', 'volta para US$ 32.000 e limpa os avisos'],
+];
+function runScenario(kind) {
+  $('#overlay').innerHTML = '';
+  if (kind === 'reset') { engine.resetAccount(); toast('Conta demo reiniciada', 'ok'); return; }
+  if (!location.hash.startsWith('#/operar')) go('operar?sym=XAUUSD');
+  const s = engine.scenario(kind);
+  if (!s) toast(engine.scenarioOn ? 'Já tem um cenário rodando. Espere ele terminar.' : 'Já existe operação ou sinal aberto no ouro. Feche ou espere terminar.', 'err');
+}
+function toggleScenarios() {
+  const ov = $('#overlay');
+  if (ov.querySelector('.popover')) { ov.innerHTML = ''; return; }
+  ov.innerHTML = `<div class="sheet-bg" style="background:transparent;backdrop-filter:none"></div><div class="popover scen-pop"><div class="card-h" style="margin-bottom:8px"><h3>${icon('play', 16)} Cenários de apresentação</h3></div>
+    <div class="list">${SCENARIOS.map(([k, id, t, d]) => `<button class="li scen-item" data-scen="${id}"><kbd>${k}</kbd><div class="txt"><b>${t}</b><small>${d}</small></div></button>`).join('')}</div>
+    <p class="muted" style="font-size:.74rem;margin:10px 2px 0">Atalho: aperte a tecla do número em qualquer tela. O cenário leva uns 30 segundos depois que você compra.</p></div>`;
+  ov.querySelector('.sheet-bg').onclick = () => (ov.innerHTML = '');
+  ov.querySelectorAll('[data-scen]').forEach((b) => (b.onclick = () => runScenario(b.dataset.scen)));
+}
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable]')) return;
+  const sc = SCENARIOS.find(([k]) => k === e.key);
+  if (sc) { e.preventDefault(); runScenario(sc[1]); }
+});
 
 function toggleBell() {
   const ov = $('#overlay');
@@ -154,6 +184,7 @@ function boot() {
     updateBadges();
     if (s && s.status !== 'novo') document.querySelectorAll(`#toasts [data-sig="${s.id}"]`).forEach((el) => el.remove());
   });
+  engine.bus.on('attention', (a) => { if (a) toast('O modelo precisa de atenção · o semáforo ficou amarelo', 'err', [{ label: 'Ver o semáforo', fn: () => go('risco') }]); });
   engine.bus.on('closed', (d) => { if (d && d.comment !== 'cenário de estresse') toast(`${d.reason === 'alvo' ? 'Alvo atingido' : d.reason === 'stop' ? 'Stop atingido' : 'Posição fechada'} · ${d.symbol} · ${fmt.usdSigned(d.profit)}`, d.profit > 0 ? 'ok' : 'err'); });
   window.addEventListener('hashchange', route);
   route();

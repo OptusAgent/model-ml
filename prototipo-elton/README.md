@@ -81,6 +81,10 @@ Dentro do app, abra **Guia de apresentação** (menu lateral, ou "Mais" no celul
 
 Atalhos úteis na apresentação:
 
+- **cenários prontos**, sem sair da tela Operar: tecla **1** (sinal que bate o alvo de 3R), tecla **2**
+  (sinal que bate o stop e acende "o modelo precisa de atenção") e tecla **0** (reinicia a conta). Também
+  ficam no botão ▷ do topo. Cada um leva uns 30 segundos depois de comprar, em qualquer velocidade;
+
 - relógio e velocidade no topo. O mercado começa 15 min antes de Nova York; sinais só na abertura da Ásia e em NY, até 3 por dia. Use 300× para chegar rápido nesses horários;
 - botão de pausa para congelar o mercado enquanto explica;
 - **Risco e semáforo → Injetar 10 stops**: mostra o semáforo vermelho na hora;

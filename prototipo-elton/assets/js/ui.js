@@ -187,7 +187,7 @@ export function signalCardHTML(sig, engine, compact = false) {
   const life = Math.max(0, (sig.expiresAt - engine.now()) / (s.signalLife * 300));
   const side = sig.side > 0 ? 'buy' : 'sell';
   return `<div class="signal-card ${side}" data-sig="${sig.id}">
-    <div class="card-h"><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill ${sig.side > 0 ? 'green' : 'red'}">${icon('zap', 12)} Sinal ${sig.id}</span>${sig.demo ? '<span class="pill amber">demonstração · ignora os filtros</span>' : ''}</span><span class="muted" style="font-size:.78rem">${fmt.time(sig.time)} · modelo ${sig.modelVersion}</span></div>
+    <div class="card-h"><span style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill ${sig.side > 0 ? 'green' : 'red'}">${icon('zap', 12)} Sinal ${sig.id}</span>${sig.scenario ? '<span class="pill violet">cenário de apresentação</span>' : sig.demo ? '<span class="pill amber">demonstração · ignora os filtros</span>' : ''}</span><span class="muted" style="font-size:.78rem">${fmt.time(sig.time)} · modelo ${sig.modelVersion}</span></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${symIcon(sig.sym)}<div><div class="side ${sig.side > 0 ? 'pos' : 'neg'}">${sig.side > 0 ? 'COMPRAR' : 'VENDER'} ${sig.sym}</div><span class="muted" style="font-size:.8rem">Tendência de ${sig.regime} · ${fmt.lots(sig.lots)} lote</span></div></div>
     <div>
       <div class="muted" style="font-size:.76rem;font-weight:600;margin-bottom:6px">Chance de bater o alvo (o traço amarelo é o limite)</div>
@@ -201,7 +201,7 @@ export function signalCardHTML(sig, engine, compact = false) {
       <div><small>Ganha no alvo</small><b class="pos">${fmt.usd(sig.targetUsd)}</b></div>
       <div><small>Expectativa</small><b class="${sig.exp > 0 ? 'pos' : 'neg'}">${fmt.r(sig.exp)}</b></div>
     </div>
-    ${sig.status === 'novo' ? `<div><div class="muted" style="font-size:.74rem;margin-bottom:4px">Válido por mais ${Math.max(0, Math.ceil((sig.expiresAt - engine.now()) / 60))} min</div><div class="countdown"><i style="width:${life * 100}%"></i></div></div>
+    ${sig.status === 'novo' ? `${isFinite(sig.expiresAt) ? `<div><div class="muted" style="font-size:.74rem;margin-bottom:4px">Válido por mais ${Math.max(0, Math.ceil((sig.expiresAt - engine.now()) / 60))} min</div><div class="countdown"><i style="width:${life * 100}%"></i></div></div>` : ''}
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
       <button class="btn ${sig.side > 0 ? 'btn-buy' : 'btn-sell'} btn-block" data-act="exec" data-id="${sig.id}">${icon('send', 16)} ${sig.side > 0 ? 'Comprar' : 'Vender'} no MT5</button>
       <button class="btn btn-ghost" data-act="dismiss" data-id="${sig.id}">Ignorar</button>
