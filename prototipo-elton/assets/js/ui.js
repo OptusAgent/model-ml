@@ -64,20 +64,38 @@ export function createCandleChart(container, engine, opts = {}) {
     rightPriceScale: { borderColor: 'rgba(148,170,210,0.15)' },
     timeScale: { borderColor: 'rgba(148,170,210,0.15)', timeVisible: true, secondsVisible: false, rightOffset: 6 },
     crosshair: { mode: 0 },
-    localization: { locale: 'pt-BR', priceFormatter: (p) => fmt.num(p, SYMBOLS[sym].digits) },
+    localization: { locale: 'pt-BR' },
   });
   const series = chart.addCandlestickSeries({
     upColor: '#2bd47d', downColor: '#ff5d68', borderVisible: false, wickUpColor: '#2bd47d', wickDownColor: '#ff5d68',
   });
   series.priceScale().applyOptions({ scaleMargins: { top: 0.05, bottom: 0.3 } });
   // RSI(10) num painel embaixo, com as linhas de 70 e 30, como pediu o Elton.
+  // Fica na escala da esquerda, sempre de 0 a 100, para não se misturar com os números do preço.
+  const RSI_SCALE = () => ({ priceRange: { minValue: 0, maxValue: 100 } });
   const rsiSeries = chart.addLineSeries({
-    priceScaleId: 'rsi', color: '#9b7bff', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true,
-    crosshairMarkerVisible: false, title: `RSI(${RSI_PERIOD})`, priceFormat: { type: 'price', precision: 0, minMove: 1 },
+    priceScaleId: 'left', color: '#9b7bff', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true,
+    crosshairMarkerVisible: false, title: `RSI(${RSI_PERIOD})`, priceFormat: { type: 'custom', minMove: 1, formatter: (v) => String(Math.round(v)) },
+    autoscaleInfoProvider: RSI_SCALE,
   });
-  chart.priceScale('rsi').applyOptions({ scaleMargins: { top: 0.76, bottom: 0.02 }, borderVisible: false });
-  rsiSeries.createPriceLine({ price: 70, color: 'rgba(255,93,104,.45)', lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '70' });
-  rsiSeries.createPriceLine({ price: 30, color: 'rgba(43,212,125,.45)', lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '30' });
+  chart.applyOptions({ leftPriceScale: { visible: true, borderColor: 'rgba(148,170,210,0.15)', scaleMargins: { top: 0.76, bottom: 0.03 } } });
+  rsiSeries.createPriceLine({ price: 100, color: 'rgba(148,170,210,.28)', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: '' });
+  rsiSeries.createPriceLine({ price: 70, color: 'rgba(255,93,104,.75)', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' });
+  rsiSeries.createPriceLine({ price: 30, color: 'rgba(43,212,125,.75)', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' });
+  rsiSeries.createPriceLine({ price: 0, color: 'rgba(148,170,210,.28)', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: '' });
+  // Cobre os números do preço na faixa do RSI (eles não valem para a linha roxa).
+  // E cobre os números do RSI que a escala da esquerda repete na faixa do preço.
+  const mask = document.createElement('div'), maskL = document.createElement('div');
+  mask.className = 'rsi-mask';
+  maskL.className = 'rsi-mask left';
+  container.append(mask, maskL);
+  function placeMask() {
+    const paneH = container.clientHeight - chart.timeScale().height();
+    Object.assign(mask.style, { top: `${paneH * 0.72}px`, height: `${paneH * 0.28}px`, width: `${chart.priceScale('right').width()}px` });
+    Object.assign(maskL.style, { top: '0px', height: `${paneH * 0.755}px`, width: `${chart.priceScale('left').width()}px` });
+  }
+  const ro = new ResizeObserver(() => requestAnimationFrame(placeMask));
+  ro.observe(container);
   let lines = [], divSeries = [], divMarks = [], data = [];
 
   function drawDivergences() {
@@ -91,7 +109,7 @@ export function createCandleChart(container, engine, opts = {}) {
       const opts = { color: col, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false };
       const ps = chart.addLineSeries(opts);
       ps.setData([{ time: data[d.i1].time, value: data[d.i1][key] }, { time: data[d.i2].time, value: data[d.i2][key] }]);
-      const rs = chart.addLineSeries({ ...opts, priceScaleId: 'rsi' });
+      const rs = chart.addLineSeries({ ...opts, priceScaleId: 'left', autoscaleInfoProvider: RSI_SCALE });
       rs.setData([{ time: data[d.i1].time, value: rsi[d.i1] }, { time: data[d.i2].time, value: rsi[d.i2] }]);
       divSeries.push(ps, rs);
       divMarks.push({ time: data[d.i2].time, position: d.type === 'alta' ? 'belowBar' : 'aboveBar', color: col, shape: 'circle', text: d.type === 'alta' ? 'Div. alta' : 'Div. baixa' });
@@ -105,11 +123,12 @@ export function createCandleChart(container, engine, opts = {}) {
   function load() {
     data = engine.getBars(sym, tf).slice(-600);
     series.setData(data);
-    series.applyOptions({ priceFormat: { type: 'price', precision: SYMBOLS[sym].digits, minMove: 1 / 10 ** SYMBOLS[sym].digits } });
+    series.applyOptions({ priceFormat: { type: 'custom', minMove: 1 / 10 ** SYMBOLS[sym].digits, formatter: (p) => fmt.num(p, SYMBOLS[sym].digits) } });
     updateRsi();
     drawDivergences();
     markers();
     refreshLines();
+    requestAnimationFrame(placeMask);
   }
   function lastBar() {
     const bars = engine.getBars(sym, tf);
@@ -156,7 +175,7 @@ export function createCandleChart(container, engine, opts = {}) {
   }
   const offs = [
     engine.bus.on('tick', (t) => { if (t.sym === sym) onTick(); }),
-    engine.bus.on('candle', (c) => { if (c.sym === sym && (c.candle.time + 60) % (tf * 60) === 0) { drawDivergences(); markers(); } }),
+    engine.bus.on('candle', (c) => { if (c.sym === sym && (c.candle.time + 60) % (tf * 60) === 0) { drawDivergences(); markers(); placeMask(); } }),
     engine.bus.on('signal', () => { markers(); refreshLines(); }),
     engine.bus.on('signalUpdate', () => { markers(); refreshLines(); }),
     engine.bus.on('positions', refreshLines),
@@ -169,7 +188,7 @@ export function createCandleChart(container, engine, opts = {}) {
     setTf(v) { tf = v; load(); chart.timeScale().scrollToRealTime(); },
     get sym() { return sym; },
     refreshLines,
-    destroy() { offs.forEach((o) => o()); chart.remove(); },
+    destroy() { offs.forEach((o) => o()); ro.disconnect(); chart.remove(); },
   };
 }
 

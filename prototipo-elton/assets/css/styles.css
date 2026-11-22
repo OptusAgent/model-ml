@@ -408,6 +408,10 @@ details.faq p { margin: 8px 0 0; color: var(--ink-2); }
 .op-log summary .muted { font-family: var(--f-mono); font-size: 0.72rem; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .op-log summary::after { content: 'ver tudo'; margin-left: auto; color: var(--blue-2); font-size: 0.74rem; white-space: nowrap; }
 .op-log[open] summary::after { content: 'recolher'; }
+/* Esconde os números do preço na faixa do RSI */
+.rsi-mask { position: absolute; right: 0; z-index: 3; pointer-events: none; background: #0f1727; border-left: 1px solid rgba(148, 170, 210, 0.15); }
+.rsi-mask.left { right: auto; left: 0; border-left: 0; border-right: 1px solid rgba(148, 170, 210, 0.15); }
+
 /* Menu de cenários */
 .scen-item { width: 100%; background: none; border: 0; border-bottom: 1px solid var(--line); color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 0; }
 .scen-item:hover .txt b { color: var(--blue-2); }
