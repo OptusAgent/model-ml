@@ -174,9 +174,14 @@ export function createCandleChart(container, engine, opts = {}) {
 }
 
 export function signalCardHTML(sig, engine, compact = false) {
-  if (!sig) {
+  // Depois de comprado, ignorado ou expirado, o aviso sai e fica só uma linha dizendo o que aconteceu.
+  if (!sig || (sig.status !== 'novo' && sig.status !== 'enviando')) {
+    const what = sig ? `${sig.side > 0 ? 'compra' : 'venda'} de ${sig.sym}` : '';
+    const last = !sig ? '' : sig.status === 'executado'
+      ? `<div class="calc" style="font-size:.84rem">Último sinal ${sig.id} (${what}): <b class="pos">executado</b> · ticket ${sig.result?.order || ''}. Acompanhe o lucro em <a href="#/posicoes">Posições e histórico</a>.</div>`
+      : `<div class="calc" style="font-size:.84rem">Último sinal ${sig.id} (${what}): ${sig.status === 'recusado' ? 'recusado pela corretora' : sig.status === 'expirado' ? 'expirou sem execução' : 'ignorado'}.</div>`;
     return `<div class="card"><div class="card-h"><h3>${icon('zap', 16)} Sinal agora</h3></div>
-      <div class="empty">Nenhum sinal aberto. O modelo avalia o mercado a cada candle de 5 minutos e só avisa quando a chance passa do limite.</div></div>`;
+      <div class="empty">Nenhum sinal aberto. O modelo avalia o mercado a cada candle de 5 minutos e só avisa quando a chance passa do limite.</div>${last}</div>`;
   }
   const s = engine.settings;
   const life = Math.max(0, (sig.expiresAt - engine.now()) / (s.signalLife * 300));

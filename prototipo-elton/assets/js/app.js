@@ -38,6 +38,7 @@ function toast(text, kind = 'info', actions = []) {
   box.appendChild(t);
   setTimeout(close, actions.length ? 14000 : 5000);
   while (box.children.length > 3) box.firstChild.remove();
+  return t;
 }
 
 function go(id) { location.hash = '#/' + id; }
@@ -141,13 +142,18 @@ function boot() {
     updateBadges();
     if (!s) return;
     if (engine.settings.notify.app) {
-      toast(`${s.side > 0 ? 'COMPRAR' : 'VENDER'} ${s.sym} · chance ${(s.p * 100).toFixed(0)}% · ${fmt.lots(s.lots)} lote`, s.side > 0 ? 'buy' : 'sell', [
+      const t = toast(`${s.side > 0 ? 'COMPRAR' : 'VENDER'} ${s.sym} · chance ${(s.p * 100).toFixed(0)}% · ${fmt.lots(s.lots)} lote`, s.side > 0 ? 'buy' : 'sell', [
         { label: (s.side > 0 ? 'Comprar' : 'Vender') + ' no MT5', cls: s.side > 0 ? 'btn-buy' : 'btn-sell', fn: async () => { const r = await engine.execute(s.id); if (r) toast(r.retcode === 10009 ? `Executado · ticket ${r.order}` : `Recusado: ${r.comment}`, r.retcode === 10009 ? 'ok' : 'err'); } },
         { label: 'Ver no gráfico', fn: () => go('operar?sym=' + s.sym) },
       ]);
+      t.dataset.sig = s.id;
     }
   });
-  engine.bus.on('signalUpdate', updateBadges);
+  // Quando o sinal é executado, ignorado ou expira, o aviso flutuante some.
+  engine.bus.on('signalUpdate', (s) => {
+    updateBadges();
+    if (s && s.status !== 'novo') document.querySelectorAll(`#toasts [data-sig="${s.id}"]`).forEach((el) => el.remove());
+  });
   engine.bus.on('closed', (d) => { if (d && d.comment !== 'cenário de estresse') toast(`${d.reason === 'alvo' ? 'Alvo atingido' : d.reason === 'stop' ? 'Stop atingido' : 'Posição fechada'} · ${d.symbol} · ${fmt.usdSigned(d.profit)}`, d.profit > 0 ? 'ok' : 'err'); });
   window.addEventListener('hashchange', route);
   route();
