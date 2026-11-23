@@ -4,7 +4,7 @@
 import { SYMBOLS, SYMBOL_IDS } from '../market.js';
 import { fmt } from '../util.js';
 import { icon } from '../icons.js';
-import { $, px, REGIME_PILL, symIcon, createCandleChart, chanceBar, contribHTML, bindSignalActions } from '../ui.js';
+import { $, px, REGIME_PILL, symIcon, createCandleChart, chanceBar, contribHTML, ruleLineHTML, bindSignalActions } from '../ui.js';
 
 const TFS = [[1, 'M1'], [2, 'M2'], [5, 'M5'], [15, 'M15'], [60, 'H1']];
 const SEM = { verde: ['green', 'Semáforo verde'], amarelo: ['amber', 'Semáforo amarelo'], vermelho: ['red', 'Semáforo vermelho'] };
@@ -195,6 +195,7 @@ export default {
           <div><small>Arrisca (1R)</small><b>${fmt.usd(s.riskUsd)}</b></div>
           <div><small>Ganha no alvo</small><b class="pos">${fmt.usd(s.targetUsd)}</b></div>
         </div>
+        ${ruleLineHTML(s)}
         ${s.status === 'novo' ? `<div class="op-sig-b"><button class="btn ${buy ? 'btn-buy' : 'btn-sell'}" data-act="exec" data-id="${s.id}">${icon('send', 15)} ${buy ? 'Comprar' : 'Vender'} no MT5</button><button class="btn btn-ghost" data-act="dismiss" data-id="${s.id}">Ignorar</button></div>${left}` : '<span class="pill blue">Enviando ao MT5…</span>'}
         <details class="op-sig-why"><summary>Por que o modelo deu esse sinal?</summary>${contribHTML(s.contrib)}</details>`;
     }

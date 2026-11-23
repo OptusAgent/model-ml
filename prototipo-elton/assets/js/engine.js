@@ -2,7 +2,7 @@
 // No app real este motor roda num servidor (VPS Windows com o MT5) e conversa com o app por WebSocket.
 import { Feed, SYMBOLS, SYMBOL_IDS, aggregate } from './market.js';
 import { indicators, featureAt, predict, contributions } from './features.js';
-import { runLab } from './lab.js';
+import { runLab, ruleParts } from './lab.js';
 import { MockMT5, RETCODE } from './broker.js';
 import { createBus, mean } from './util.js';
 
@@ -198,7 +198,9 @@ export function createEngine() {
       lots: sz.lots, riskUsd: sz.realRisk, targetUsd: sz.realRisk * settings.R, p,
       exp: p * settings.R - (1 - p) - cost, cost, regime: ft.regime, atr: ft.atr,
       contrib: contributions(labs[sym].model, ft.x), status: 'novo', modelVersion: labs[sym].version, demo,
+      ruleParts: ruleParts(ft.regime, ft.x),
     };
+    sig.rule = labs[sym].ruleIndex[sig.ruleParts.join('|')] || null;
     signals.unshift(sig);
     if (signals.length > 100) signals.pop();
     bus.emit('signal', sig);

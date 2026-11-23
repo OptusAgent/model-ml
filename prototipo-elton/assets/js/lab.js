@@ -4,6 +4,13 @@ import { generateHistory, aggregate } from './market.js';
 import { indicators, featureAt, labelAt, trainLogit, predict } from './features.js';
 import { rng, mean } from './util.js';
 
+// A "regra" de um momento: a combinação de condições que o laboratório usa para agrupar os resultados.
+export const RULE_MIN = 20; // abaixo disso, poucos casos para confiar
+export function ruleParts(regime, x) {
+  const sess = x[9] ? 'abertura da Ásia' : x[6] ? 'Londres' : x[7] ? 'Nova York' : 'fora das sessões';
+  return [regime === 'alta' ? 'Tendência de alta' : 'Tendência de baixa', x[1] ? 'varreu liquidez a favor' : 'sem varrida', x[11] ? 'divergência RSI a favor' : 'sem divergência', sess];
+}
+
 export const LAB_DEFAULTS = { limiar: 0.5, R: 3, stopAtr: 1, maxBars: 36, minutes: 90000, perms: 20 };
 
 // Uma operação por vez: ignora entradas enquanto a anterior ainda está aberta.
@@ -93,16 +100,15 @@ export function runLab(symId, opts = {}) {
   // Regras encontradas: combinações que o modelo favorece, medidas nas provas.
   const groups = new Map();
   for (const c of calib) {
-    const s = c.s;
-    const sess = s.x[9] ? 'abertura da Ásia' : s.x[6] ? 'Londres' : s.x[7] ? 'Nova York' : 'fora das sessões';
-    const key = `${s.regime === 'alta' ? 'Tendência de alta' : 'Tendência de baixa'}|${s.x[1] ? 'varreu liquidez a favor' : 'sem varrida'}|${s.x[11] ? 'divergência RSI a favor' : 'sem divergência'}|${sess}`;
+    const key = ruleParts(c.s.regime, c.s.x).join('|');
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(c);
   }
-  const rules = [...groups.entries()]
-    .map(([key, g]) => ({ parts: key.split('|'), n: g.length, said: mean(g.map((c) => c.p)), happened: mean(g.map((c) => c.y)), exp: mean(g.map((c) => c.s.r)) }))
-    .filter((g) => g.n >= 20)
-    .sort((a, b) => b.exp - a.exp);
+  const allRules = [...groups.entries()]
+    .map(([key, g]) => ({ key, parts: key.split('|'), n: g.length, said: mean(g.map((c) => c.p)), happened: mean(g.map((c) => c.y)), exp: mean(g.map((c) => c.s.r)) }));
+  // Índice de todas as combinações, para cada sinal ao vivo mostrar a regra dele e como ela foi nas provas.
+  const ruleIndex = Object.fromEntries(allRules.map((r) => [r.key, r]));
+  const rules = allRules.filter((g) => g.n >= RULE_MIN).sort((a, b) => b.exp - a.exp);
   const lateralRes = { n: ds.lateral.length, acerto: mean(ds.lateral.map((l) => l.y)), exp: mean(ds.lateral.map((l) => l.r)) };
 
   const allTest = rounds.reduce((a, x) => a + x.test.n, 0);
@@ -115,7 +121,7 @@ export function runLab(symId, opts = {}) {
 
   return {
     symId, opts: o, model, rounds, cofre: cofreRes, cofreBase, cofreRange: [cofre[0].time, cofre[cofre.length - 1].time],
-    perm, pValue, bins, rules, lateral: lateralRes,
+    perm, pValue, bins, rules, ruleIndex, lateral: lateralRes,
     counts: {
       bars: ds.bars.length, m1: ds.m1count, samples: S.length, lateral: ds.lateral.length,
       alvo: S.filter((s) => s.out === 'alvo').length, stop: S.filter((s) => s.out === 'stop').length, tempo: S.filter((s) => s.out === 'tempo').length,

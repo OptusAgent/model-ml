@@ -192,6 +192,18 @@ export function createCandleChart(container, engine, opts = {}) {
   };
 }
 
+// Linha da regra no cartão do sinal: a combinação de condições daquele momento e como ela foi nas provas.
+const RULE_SHORT = { 'Tendência de alta': 'alta', 'Tendência de baixa': 'baixa', 'varreu liquidez a favor': 'varreu liquidez', 'divergência RSI a favor': 'com divergência' };
+export function ruleLineHTML(sig) {
+  if (!sig.ruleParts) return '';
+  const chips = sig.ruleParts.map((p, i) => `<span class="rule-chip ${i === 0 ? (p.includes('alta') ? 'g' : 'r') : p.startsWith('sem ') ? 'n' : i === 3 ? 'b' : 'v'}">${RULE_SHORT[p] || p}</span>`).join('');
+  const r = sig.rule;
+  const stats = !r ? '<span class="amber">combinação que não apareceu nas provas</span>'
+    : r.n < 20 ? `<span class="amber">só ${r.n} casos nas provas: pouca prova</span>`
+    : `nas provas: <b>${r.n}</b> casos · acerto <b>${fmt.pct(r.happened, 0)}</b> · <b class="${r.exp > 0 ? 'pos' : 'neg'}">${fmt.r(r.exp)}</b> por operação`;
+  return `<div class="rule-line" title="A regra é a combinação de condições deste momento. Os números mostram como ela se saiu nos testes do laboratório."><span class="rule-l">Regra</span><div class="rule-chips">${chips}</div><span class="rule-s">${stats}</span></div>`;
+}
+
 export function signalCardHTML(sig, engine, compact = false) {
   // Depois de comprado, ignorado ou expirado, o aviso sai e fica só uma linha dizendo o que aconteceu.
   if (!sig || (sig.status !== 'novo' && sig.status !== 'enviando')) {
@@ -220,6 +232,7 @@ export function signalCardHTML(sig, engine, compact = false) {
       <div><small>Ganha no alvo</small><b class="pos">${fmt.usd(sig.targetUsd)}</b></div>
       <div><small>Expectativa</small><b class="${sig.exp > 0 ? 'pos' : 'neg'}">${fmt.r(sig.exp)}</b></div>
     </div>
+    ${ruleLineHTML(sig)}
     ${sig.status === 'novo' ? `${isFinite(sig.expiresAt) ? `<div><div class="muted" style="font-size:.74rem;margin-bottom:4px">Válido por mais ${Math.max(0, Math.ceil((sig.expiresAt - engine.now()) / 60))} min</div><div class="countdown"><i style="width:${life * 100}%"></i></div></div>` : ''}
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
       <button class="btn ${sig.side > 0 ? 'btn-buy' : 'btn-sell'} btn-block" data-act="exec" data-id="${sig.id}">${icon('send', 16)} ${sig.side > 0 ? 'Comprar' : 'Vender'} no MT5</button>

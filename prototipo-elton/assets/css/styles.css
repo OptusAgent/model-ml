@@ -432,6 +432,19 @@ details.faq p { margin: 8px 0 0; color: var(--ink-2); }
 .op-info { font-size: 0.76rem; flex: 1; min-width: 200px; }
 .op-log { padding: 12px 16px; gap: 10px; }
 
+/* Linha da regra no cartão do sinal */
+.rule-line { display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; border-radius: 10px; background: rgba(155, 123, 255, 0.07); border: 1px solid rgba(155, 123, 255, 0.25); font-size: 0.74rem; }
+.rule-l { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--violet); }
+.rule-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.rule-chip { padding: 2px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; background: rgba(255, 255, 255, 0.06); color: var(--ink-2); }
+.rule-chip.g { background: var(--green-soft); color: var(--green); }
+.rule-chip.r { background: var(--red-soft); color: var(--red); }
+.rule-chip.v { background: rgba(155, 123, 255, 0.16); color: var(--violet); }
+.rule-chip.b { background: var(--blue-soft); color: var(--blue-2); }
+.rule-chip.n { color: var(--muted); }
+.rule-s { color: var(--ink-2); }
+.rule-s b { font-family: var(--f-mono); }
+
 /* Esconde os números do preço na faixa do RSI */
 .rsi-mask { position: absolute; right: 0; z-index: 3; pointer-events: none; background: #0f1727; border-left: 1px solid rgba(148, 170, 210, 0.15); }
 .rsi-mask.left { right: auto; left: 0; border-left: 0; border-right: 1px solid rgba(148, 170, 210, 0.15); }
