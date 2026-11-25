@@ -7,7 +7,7 @@ const TEST = [
   ['posicoes', 'Posições e histórico', ['A posição aberta mostra o lucro mudando a cada tick.', 'Quando bate o stop ou o alvo, ela vai sozinha para o histórico.', 'O relatório usa os nomes do MT5: Profit Trades, Profit Factor, Expected Payoff.']],
   ['risco', 'Risco e semáforo', ['Clique em "Injetar 10 stops seguidos": o semáforo fica vermelho e os sinais param.', 'Clique em "Reiniciar a conta demo" para voltar ao verde.', 'Mude o risco por operação e veja a tabela de quanto a conta cai.']],
   ['laboratorio', 'Laboratório', ['Compare as barras de estudo e prova de cada rodada.', 'Mude o alvo para 4R e clique em "Retreinar": veja o que acontece com o veredito.', 'Volte para 3R e retreine antes da apresentação.']],
-  ['conexoes', 'MT5 e conectores', ['Siga o desenho: azul são dados e sinais, amarelo é a ordem.', 'Leia as 4 opções de execução e marque o checklist com o que já tem.']],
+  ['conexoes', 'MT5 e conectores', ['Siga o desenho: azul são dados e sinais, laranja é a ordem.', 'Leia as 4 opções de execução e marque o checklist com o que já tem.']],
   ['config', 'Configurações', ['Desligue o HK50, troque o limite de chance e os horários.', 'Teste o modo automático (só demo) e depois volte para "Sinal + botão".']],
 ];
 

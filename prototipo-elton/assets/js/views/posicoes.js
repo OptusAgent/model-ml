@@ -12,7 +12,7 @@ function equitySVG(points) {
   const d = points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.balance).toFixed(1)}`).join(' ');
   const up = vals[vals.length - 1] >= vals[0], col = up ? 'var(--green)' : 'var(--red)';
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Curva da conta">
-    <line x1="${X0}" x2="${X1}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="rgba(148,170,210,.12)"/><line x1="${X0}" x2="${X1}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="rgba(148,170,210,.12)"/>
+    <line x1="${X0}" x2="${X1}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="rgba(24,24,32,.12)"/><line x1="${X0}" x2="${X1}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="rgba(24,24,32,.12)"/>
     <text x="${X0 - 6}" y="${Y(hi) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt.int(hi)}</text><text x="${X0 - 6}" y="${Y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt.int(lo)}</text>
     <path d="${d} L${X1} ${Y1} L${X0} ${Y1} Z" fill="${col}" opacity=".1"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2"/>
     <circle cx="${X(points.length - 1)}" cy="${Y(vals[vals.length - 1])}" r="4" fill="${col}"/></svg>`;

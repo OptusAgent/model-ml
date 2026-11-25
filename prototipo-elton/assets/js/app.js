@@ -48,10 +48,10 @@ function go(id) { location.hash = '#/' + id; }
 
 function renderSidebar() {
   $('#sidebar').innerHTML = `
-    <div class="brand"><div class="brand-logo">${icon('chart', 18, 'stroke="#fff"')}</div><div class="brand-txt"><b>Sinal Lab</b><small>protótipo · dados simulados</small></div><button class="side-toggle" id="sideToggle" type="button" aria-label="Abrir ou recolher o menu" title="Abrir ou recolher o menu">${icon('menu', 16)}</button></div>
+    <div class="brand"><div class="brand-logo"><img class="brand-full" src="assets/img/esmathe-logo.png" alt="Esmathe Capital"><img class="brand-mark" src="assets/img/esmathe-mark-claro.png" alt="Esmathe Capital"></div><div class="brand-txt"><b>Sinal Lab</b><small>protótipo · dados simulados</small></div><button class="side-toggle" id="sideToggle" type="button" aria-label="Abrir ou recolher o menu" title="Abrir ou recolher o menu">${icon('menu', 16)}</button></div>
     ${NAV.map((g) => `<div class="nav-sec">${g.sec}</div><nav class="nav">${g.items.map(([id, label, ic]) => `<a href="#/${id}" data-nav="${id}" title="${label}">${icon(ic, 18)}<span>${label}</span>${id === 'painel' ? '<span class="badge" data-sigbadge hidden>0</span>' : ''}</a>`).join('')}</nav>`).join('')}
     <div class="side-card">
-      <div class="ic-box">${icon('book', 16, 'stroke="#fff"')}</div>
+      <div class="ic-box">${icon('book', 16, 'stroke="#e4a92e"')}</div>
       <b>Modo apresentação</b>
       <p>Conta DEMO simulada, mercado simulado e modelo treinado em dados sintéticos.</p>
       <a class="btn btn-glass btn-block btn-sm" href="#/guia">${icon('play', 14)} Abrir o roteiro</a>
@@ -83,6 +83,7 @@ function openMore() {
 
 function renderTopbar() {
   $('#topbar').innerHTML = `
+    <img class="brand-m" src="assets/img/esmathe-mark-claro.png" alt="Esmathe Capital">
     <div class="title" id="pageTitle">Painel</div>
     <span class="mt5-chip hide-m" title="Conexão simulada com o MetaTrader 5"><span class="pulse"></span>MT5 · Hantec Demo</span>
     <div class="spacer"></div>
@@ -161,7 +162,7 @@ function route() {
   syncMenu();
   const view = VIEWS[name];
   $('#pageTitle').textContent = view.title;
-  document.title = view.title + ' · Sinal Lab';
+  document.title = view.title + ' · Sinal Lab · Esmathe Capital';
   $$('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === name));
   const root = $('#view');
   root.innerHTML = '';
