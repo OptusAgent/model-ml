@@ -57,32 +57,36 @@ export function createCandleChart(container, engine, opts = {}) {
     container.innerHTML = '<div class="empty">Não foi possível carregar a biblioteca de gráficos. Verifique a internet.</div>';
     return { setSymbol() {}, setTf() {}, destroy() {}, refreshLines() {} };
   }
+  // Cores do tema atual (claro ou escuro), lidas do CSS.
+  const cv = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const TINT = cv('--tint'), UP = cv('--chart-up'), DOWN = cv('--chart-down');
+  const tint = (a) => `rgba(${TINT},${a})`;
   const chart = LC.createChart(container, {
     autoSize: true,
-    layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#2f2f36', fontFamily: 'Manrope, sans-serif', fontSize: 11 },
-    grid: { vertLines: { color: 'rgba(24,24,32,0.06)' }, horzLines: { color: 'rgba(24,24,32,0.06)' } },
-    rightPriceScale: { borderColor: 'rgba(24,24,32,0.15)' },
-    timeScale: { borderColor: 'rgba(24,24,32,0.15)', timeVisible: true, secondsVisible: false, rightOffset: 6 },
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: cv('--chart-text'), fontFamily: 'Manrope, sans-serif', fontSize: 11 },
+    grid: { vertLines: { color: tint(0.06) }, horzLines: { color: tint(0.06) } },
+    rightPriceScale: { borderColor: tint(0.15) },
+    timeScale: { borderColor: tint(0.15), timeVisible: true, secondsVisible: false, rightOffset: 6 },
     crosshair: { mode: 0 },
     localization: { locale: 'pt-BR' },
   });
   const series = chart.addCandlestickSeries({
-    upColor: '#0B8043', downColor: '#C81E2D', borderVisible: false, wickUpColor: '#0B8043', wickDownColor: '#C81E2D',
+    upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN,
   });
   series.priceScale().applyOptions({ scaleMargins: { top: 0.05, bottom: 0.3 } });
   // RSI(10) num painel embaixo, com as linhas de 70 e 30, como pediu o Elton.
   // Fica na escala da esquerda, sempre de 0 a 100, para não se misturar com os números do preço.
   const RSI_SCALE = () => ({ priceRange: { minValue: 0, maxValue: 100 } });
   const rsiSeries = chart.addLineSeries({
-    priceScaleId: 'left', color: '#7C3AED', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true,
+    priceScaleId: 'left', color: cv('--chart-rsi'), lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true,
     crosshairMarkerVisible: false, title: `RSI(${RSI_PERIOD})`, priceFormat: { type: 'custom', minMove: 1, formatter: (v) => String(Math.round(v)) },
     autoscaleInfoProvider: RSI_SCALE,
   });
-  chart.applyOptions({ leftPriceScale: { visible: true, borderColor: 'rgba(24,24,32,0.15)', scaleMargins: { top: 0.76, bottom: 0.03 } } });
-  rsiSeries.createPriceLine({ price: 100, color: 'rgba(24,24,32,.28)', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: '' });
-  rsiSeries.createPriceLine({ price: 70, color: 'rgba(200,30,45,.75)', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' });
-  rsiSeries.createPriceLine({ price: 30, color: 'rgba(11,128,67,.75)', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' });
-  rsiSeries.createPriceLine({ price: 0, color: 'rgba(24,24,32,.28)', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: '' });
+  chart.applyOptions({ leftPriceScale: { visible: true, borderColor: tint(0.15), scaleMargins: { top: 0.76, bottom: 0.03 } } });
+  rsiSeries.createPriceLine({ price: 100, color: tint(0.28), lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: '' });
+  rsiSeries.createPriceLine({ price: 70, color: DOWN + 'bf', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' });
+  rsiSeries.createPriceLine({ price: 30, color: UP + 'bf', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' });
+  rsiSeries.createPriceLine({ price: 0, color: tint(0.28), lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: '' });
   // Cobre os números do preço na faixa do RSI (eles não valem para a linha roxa).
   // E cobre os números do RSI que a escala da esquerda repete na faixa do preço.
   const mask = document.createElement('div'), maskL = document.createElement('div');
@@ -104,7 +108,7 @@ export function createCandleChart(container, engine, opts = {}) {
     const rsi = rsiOf(data);
     const divs = divergencesOf(data, rsi).filter((d) => d.at < data.length).slice(-8);
     for (const d of divs) {
-      const col = d.type === 'alta' ? '#0B8043' : '#C81E2D';
+      const col = d.type === 'alta' ? UP : DOWN;
       const key = d.type === 'alta' ? 'low' : 'high';
       const opts = { color: col, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false };
       const ps = chart.addLineSeries(opts);
@@ -148,11 +152,11 @@ export function createCandleChart(container, engine, opts = {}) {
     const ms = [...divMarks];
     for (const s of engine.signals) {
       if (s.sym !== sym) continue;
-      ms.push({ time: Math.floor((s.time - 300) / span) * span, position: s.side > 0 ? 'belowBar' : 'aboveBar', color: s.side > 0 ? '#0B8043' : '#C81E2D', shape: s.side > 0 ? 'arrowUp' : 'arrowDown', text: s.id });
+      ms.push({ time: Math.floor((s.time - 300) / span) * span, position: s.side > 0 ? 'belowBar' : 'aboveBar', color: s.side > 0 ? UP : DOWN, shape: s.side > 0 ? 'arrowUp' : 'arrowDown', text: s.id });
     }
     for (const d of engine.broker.deals) {
       if (d.symbol !== sym || !d.time_close || d.comment === 'cenário de estresse') continue;
-      ms.push({ time: Math.floor(d.time_close / span) * span, position: 'inBar', color: d.profit > 0 ? '#0B8043' : '#C81E2D', shape: 'circle', text: d.profit > 0 ? 'alvo' : 'stop' });
+      ms.push({ time: Math.floor(d.time_close / span) * span, position: 'inBar', color: d.profit > 0 ? UP : DOWN, shape: 'circle', text: d.profit > 0 ? 'alvo' : 'stop' });
     }
     ms.sort((a, b) => a.time - b.time);
     try { series.setMarkers(ms); } catch (e) { /* marcadores fora do intervalo */ }
@@ -162,15 +166,15 @@ export function createCandleChart(container, engine, opts = {}) {
     lines = [];
     const add = (price, color, title, style = 2) => lines.push(series.createPriceLine({ price, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title }));
     for (const p of engine.broker.positions.filter((x) => x.symbol === sym)) {
-      add(p.price_open, '#1D4ED8', `${p.type === 'BUY' ? 'Compra' : 'Venda'} ${fmt.lots(p.volume)}`, 0);
-      if (p.sl) add(p.sl, '#C81E2D', 'Stop');
-      if (p.tp) add(p.tp, '#0B8043', 'Alvo');
+      add(p.price_open, cv('--chart-pos'), `${p.type === 'BUY' ? 'Compra' : 'Venda'} ${fmt.lots(p.volume)}`, 0);
+      if (p.sl) add(p.sl, DOWN, 'Stop');
+      if (p.tp) add(p.tp, UP, 'Alvo');
     }
     const sig = engine.signals.find((s) => s.sym === sym && s.status === 'novo');
     if (sig) {
-      add(sig.entry, '#B45309', `Sinal ${sig.id}`, 1);
-      add(sig.sl, 'rgba(200,30,45,.7)', 'Stop sugerido');
-      add(sig.tp, 'rgba(11,128,67,.7)', 'Alvo sugerido');
+      add(sig.entry, cv('--chart-entry'), `Sinal ${sig.id}`, 1);
+      add(sig.sl, DOWN + 'b3', 'Stop sugerido');
+      add(sig.tp, UP + 'b3', 'Alvo sugerido');
     }
   }
   const offs = [

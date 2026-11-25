@@ -13,11 +13,11 @@ function roundsSVG(L) {
   const groups = [...L.rounds.map((r) => ({ lbl: 'Rodada ' + r.k, a: r.train.exp, b: r.test.exp })), { lbl: 'Cofre', a: null, b: L.cofre.exp }];
   const gw = (X1 - X0) / groups.length;
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Expectativa no estudo e na prova por rodada">`;
-  [lo, 0, hi].forEach((t) => (s += `<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t === 0 ? 'rgba(24,24,32,.35)' : 'rgba(24,24,32,.1)'}"/><text x="${X0 - 6}" y="${Y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt.r(t)}</text>`));
+  [lo, 0, hi].forEach((t) => (s += `<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t === 0 ? 'rgba(var(--tint),.35)' : 'rgba(var(--tint),.1)'}"/><text x="${X0 - 6}" y="${Y(t) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt.r(t)}</text>`));
   groups.forEach((g, i) => {
     const cx = X0 + gw * i + gw / 2, bw = Math.min(34, gw * 0.3);
     const bar = (v, x, col) => { const y = Math.min(Y(v), Y(0)), h = Math.abs(Y(v) - Y(0)); return `<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(1, h)}" rx="5" fill="${col}"/><text x="${x + bw / 2}" y="${v >= 0 ? y - 5 : y + h + 13}" text-anchor="middle" font-size="10.5" fill="var(--ink-2)">${fmt.r(v)}</text>`; };
-    if (g.a !== null) s += bar(g.a, cx - bw - 3, 'rgba(29,78,216,.55)');
+    if (g.a !== null) s += bar(g.a, cx - bw - 3, 'var(--blue-soft-2)');
     s += bar(g.b, g.a !== null ? cx + 3 : cx - bw / 2, g.b > 0 ? 'var(--green)' : 'var(--red)');
     s += `<text x="${cx}" y="${H - 14}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${g.lbl}</text>`;
   });
@@ -30,10 +30,10 @@ function permSVG(L) {
   const lo = Math.min(...all) - 0.1, hi = Math.max(...all) + 0.1;
   const X = (v) => X0 + ((v - lo) / (hi - lo)) * (X1 - X0);
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Resultado no chute contra o resultado do modelo">`;
-  s += `<line x1="${X0}" x2="${X1}" y1="${Y1}" y2="${Y1}" stroke="rgba(24,24,32,.25)"/>`;
-  s += `<line x1="${X(0)}" x2="${X(0)}" y1="20" y2="${Y1}" stroke="rgba(24,24,32,.25)" stroke-dasharray="3 3"/><text x="${X(0)}" y="${Y1 + 16}" text-anchor="middle" font-size="11" fill="var(--muted)">0R</text>`;
+  s += `<line x1="${X0}" x2="${X1}" y1="${Y1}" y2="${Y1}" stroke="rgba(var(--tint),.25)"/>`;
+  s += `<line x1="${X(0)}" x2="${X(0)}" y1="20" y2="${Y1}" stroke="rgba(var(--tint),.25)" stroke-dasharray="3 3"/><text x="${X(0)}" y="${Y1 + 16}" text-anchor="middle" font-size="11" fill="var(--muted)">0R</text>`;
   const counts = {};
-  L.perm.forEach((v) => { const k = Math.round(v * 20); counts[k] = (counts[k] || 0) + 1; s += `<circle cx="${X(v)}" cy="${Y1 - 8 - (counts[k] - 1) * 13}" r="5.5" fill="rgba(24,24,32,.45)"/>`; });
+  L.perm.forEach((v) => { const k = Math.round(v * 20); counts[k] = (counts[k] || 0) + 1; s += `<circle cx="${X(v)}" cy="${Y1 - 8 - (counts[k] - 1) * 13}" r="5.5" fill="rgba(var(--tint),.45)"/>`; });
   s += `<line x1="${X(L.cofre.exp)}" x2="${X(L.cofre.exp)}" y1="16" y2="${Y1}" stroke="var(--blue-2)" stroke-width="2.5"/><text x="${X(L.cofre.exp)}" y="12" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--blue-2)">modelo ${fmt.r(L.cofre.exp)}</text>`;
   s += `<text x="${X0}" y="${H - 6}" font-size="11" fill="var(--muted)">cinza: ${L.perm.length} tentativas no chute (comprar ou vender sorteado) no período do cofre</text>`;
   return s + '</svg>';
@@ -43,7 +43,7 @@ function calibSVG(L) {
   const W = 300, H = 260, X0 = 44, X1 = 290, Y0 = 12, Y1 = 214, m = 0.8;
   const X = (v) => X0 + (v / m) * (X1 - X0), Y = (v) => Y1 - (v / m) * (Y1 - Y0);
   let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;height:auto" role="img" aria-label="O modelo disse contra o que aconteceu">`;
-  [0, 0.2, 0.4, 0.6, 0.8].forEach((t) => (s += `<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="rgba(24,24,32,.1)"/><text x="${X0 - 6}" y="${Y(t) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${t * 100}%</text><text x="${X(t)}" y="${Y1 + 15}" text-anchor="middle" font-size="10" fill="var(--muted)">${t * 100}%</text>`));
+  [0, 0.2, 0.4, 0.6, 0.8].forEach((t) => (s += `<line x1="${X0}" x2="${X1}" y1="${Y(t)}" y2="${Y(t)}" stroke="rgba(var(--tint),.1)"/><text x="${X0 - 6}" y="${Y(t) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${t * 100}%</text><text x="${X(t)}" y="${Y1 + 15}" text-anchor="middle" font-size="10" fill="var(--muted)">${t * 100}%</text>`));
   s += `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(m)}" y2="${Y(m)}" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="6 4"/>`;
   L.bins.forEach((b) => { const ok = Math.abs(b.happened - b.said) <= 0.07; s += `<circle cx="${X(b.said)}" cy="${Y(b.happened)}" r="${4 + Math.min(6, b.n / 80)}" fill="${ok ? 'var(--green)' : 'var(--red)'}" opacity=".85"/>`; });
   s += `<text x="${(X0 + X1) / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">o modelo disse</text><text x="12" y="${(Y0 + Y1) / 2}" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90 12 ${(Y0 + Y1) / 2})">aconteceu</text>`;

@@ -87,6 +87,7 @@ Atalhos úteis na apresentação:
 
 - relógio e velocidade no topo. O mercado começa 15 min antes de Nova York; sinais só na abertura da Ásia e em NY, até 3 por dia. Use 300× para chegar rápido nesses horários;
 - botão de pausa para congelar o mercado enquanto explica;
+- botão da lua / do sol no topo: troca entre modo claro e escuro (identidade Esmathe Capital). A escolha fica salva no navegador;
 - **Risco e semáforo → Injetar 10 stops**: mostra o semáforo vermelho na hora;
 - **Risco e semáforo → Reiniciar a conta demo** antes de começar.
 

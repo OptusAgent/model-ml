@@ -10,6 +10,7 @@
   <title>Sinal Lab · Esmathe Capital</title>
   <link rel="icon" type="image/png" href="assets/img/favicon.png">
   <link rel="apple-touch-icon" href="assets/img/esmathe-mark-claro.png">
+  <script>try { if (localStorage.getItem('tema') === 'dark') { document.documentElement.dataset.theme = 'dark'; document.querySelector('meta[name="theme-color"]').content = '#070707'; } } catch (e) {}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -19,7 +20,7 @@
 <body>
   <div class="loading" id="loading">
     <div class="box">
-      <img src="assets/img/esmathe-logo.png" alt="Esmathe Capital">
+      <div class="logo-slot"><img class="logo-claro" src="assets/img/esmathe-logo-claro.png" alt="Esmathe Capital"><img class="logo-escuro" src="assets/img/esmathe-logo-escuro.png" alt="Esmathe Capital"></div>
       <div class="spinner"></div>
       <b>Treinando o modelo no histórico…</b>
       <span class="muted">Walk Forward, cofre e teste contra o acaso (dados simulados)</span>

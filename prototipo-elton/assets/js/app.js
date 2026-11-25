@@ -48,7 +48,7 @@ function go(id) { location.hash = '#/' + id; }
 
 function renderSidebar() {
   $('#sidebar').innerHTML = `
-    <div class="brand"><div class="brand-logo"><img class="brand-full" src="assets/img/esmathe-logo.png" alt="Esmathe Capital"><img class="brand-mark" src="assets/img/esmathe-mark-claro.png" alt="Esmathe Capital"></div><div class="brand-txt"><b>Sinal Lab</b><small>protótipo · dados simulados</small></div><button class="side-toggle" id="sideToggle" type="button" aria-label="Abrir ou recolher o menu" title="Abrir ou recolher o menu">${icon('menu', 16)}</button></div>
+    <div class="brand"><div class="brand-logo"><span class="brand-full"><img class="logo-claro" src="assets/img/esmathe-logo-claro.png" alt="Esmathe Capital"><img class="logo-escuro" src="assets/img/esmathe-logo-escuro.png" alt="Esmathe Capital"></span><span class="brand-mark"><img class="logo-claro" src="assets/img/esmathe-mark-claro.png" alt="Esmathe Capital"><img class="logo-escuro" src="assets/img/esmathe-mark-escuro.png" alt="Esmathe Capital"></span></div><div class="brand-txt"><b>Sinal Lab</b><small>protótipo · dados simulados</small></div><button class="side-toggle" id="sideToggle" type="button" aria-label="Abrir ou recolher o menu" title="Abrir ou recolher o menu">${icon('menu', 16)}</button></div>
     ${NAV.map((g) => `<div class="nav-sec">${g.sec}</div><nav class="nav">${g.items.map(([id, label, ic]) => `<a href="#/${id}" data-nav="${id}" title="${label}">${icon(ic, 18)}<span>${label}</span>${id === 'painel' ? '<span class="badge" data-sigbadge hidden>0</span>' : ''}</a>`).join('')}</nav>`).join('')}
     <div class="side-card">
       <div class="ic-box">${icon('book', 16, 'stroke="#e4a92e"')}</div>
@@ -83,7 +83,7 @@ function openMore() {
 
 function renderTopbar() {
   $('#topbar').innerHTML = `
-    <img class="brand-m" src="assets/img/esmathe-mark-claro.png" alt="Esmathe Capital">
+    <span class="brand-m"><img class="logo-claro" src="assets/img/esmathe-mark-claro.png" alt="Esmathe Capital"><img class="logo-escuro" src="assets/img/esmathe-mark-escuro.png" alt="Esmathe Capital"></span>
     <div class="title" id="pageTitle">Painel</div>
     <span class="mt5-chip hide-m" title="Conexão simulada com o MetaTrader 5"><span class="pulse"></span>MT5 · Hantec Demo</span>
     <div class="spacer"></div>
@@ -91,13 +91,25 @@ function renderTopbar() {
     <button class="icon-btn" id="pauseBtn" aria-label="Pausar ou continuar o mercado">${icon('pause', 16)}</button>
     <div class="speed hide-m" id="speedSeg">${SPEEDS.map((s) => `<button data-speed="${s.v}">${s.label}</button>`).join('')}</div>
     <button class="icon-btn" id="scenBtn" aria-label="Cenários de apresentação" title="Cenários de apresentação (teclas 1, 2 e 0)">${icon('play', 16)}</button>
+    <button class="icon-btn" id="themeBtn" aria-label="Mudar para modo claro ou escuro" title="Modo claro / escuro"><span class="theme-ic-light">${icon('moon', 16)}</span><span class="theme-ic-dark">${icon('sun', 17)}</span></button>
     <button class="icon-btn" id="bellBtn" aria-label="Notificações">${icon('bell', 17)}<span class="dot" id="bellDot" hidden></span></button>
     <div class="user hide-m"><div class="avatar">ES</div><div><b>Elton Silva</b><small>conta 5823190 · demo</small></div></div>`;
   $('#pauseBtn').onclick = () => engine.pause(!engine.paused);
   $$('#speedSeg [data-speed]').forEach((b) => (b.onclick = () => engine.setSpeed(+b.dataset.speed)));
   $('#bellBtn').onclick = toggleBell;
   $('#scenBtn').onclick = toggleScenarios;
+  $('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
   syncSpeed();
+}
+
+// Modo claro / escuro. Guarda a escolha e redesenha a tela, para o gráfico pegar as cores novas.
+function setTheme(t) {
+  const root = document.documentElement;
+  if (t === 'dark') root.dataset.theme = 'dark'; else delete root.dataset.theme;
+  try { localStorage.setItem('tema', t); } catch (e) { /* sem armazenamento: vale só nesta sessão */ }
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = t === 'dark' ? '#070707' : '#f6f4ef';
+  route();
 }
 
 function syncSpeed() {
