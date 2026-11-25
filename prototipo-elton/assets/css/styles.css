@@ -242,7 +242,7 @@ table.t th.r { text-align: right; }
 /* ---------- Gráfico ---------- */
 .chart-box { position: relative; height: 380px; min-width: 0; border-radius: 12px; overflow: hidden; }
 .chart-box.tall { height: 520px; }
-.chart-legend { position: absolute; left: 10px; top: 8px; z-index: 3; display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.74rem; color: var(--muted); pointer-events: none; font-family: var(--f-mono); }
+.chart-legend { position: absolute; left: 52px; right: 76px; top: 8px; z-index: 4; display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.74rem; color: var(--muted); pointer-events: none; font-family: var(--f-mono); }
 .chart-big-price { font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 
 /* ---------- Sinal ---------- */

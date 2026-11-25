@@ -20,7 +20,10 @@ const NAV = [
   { sec: 'Conexão', items: [['conexoes', 'MT5 e conectores', 'plug'], ['config', 'Configurações', 'settings']] },
   { sec: 'Ajuda', items: [['guia', 'Guia de apresentação', 'book']] },
 ];
-const TABS = [['painel', 'Painel', 'home'], ['operar', 'Operar', 'candles'], ['posicoes', 'Posições', 'layers'], ['notebook', 'Modelo', 'code']];
+const TABS = [['painel', 'Painel', 'home'], ['operar', 'Operar', 'candles'], ['posicoes', 'Posições', 'layers'], ['risco', 'Risco', 'shield']];
+// Telas que existem mas ficam fora do menu (o endereço #/notebook continua funcionando).
+const HIDDEN = new Set(['notebook']);
+for (const g of NAV) g.items = g.items.filter(([id]) => !HIDDEN.has(id));
 
 const engine = createEngine();
 let cleanup = null, current = null;

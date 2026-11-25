@@ -12,7 +12,7 @@ export default {
     let sym = 'XAUUSD', tf = 5, raf = 0;
     root.innerHTML = `
       <div class="page-head"><div><h1>Olá, Elton</h1><p>O modelo vigia o ouro e o HK50. Quando a chance de bater o alvo passa do limite, o sinal aparece aqui e você decide se aperta o botão.</p></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-ghost btn-sm" href="#/guia">${icon('book', 14)} Roteiro</a><a class="btn btn-ghost btn-sm" href="#/notebook">${icon('code', 14)} Ver o modelo por trás</a></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-ghost btn-sm" href="#/guia">${icon('book', 14)} Roteiro</a><a class="btn btn-ghost btn-sm" href="#/laboratorio">${icon('flask', 14)} Ver o laboratório</a></div></div>
 
       <section class="grid g-hero">
         <div class="balance-card">
